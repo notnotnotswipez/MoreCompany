@@ -209,10 +209,17 @@ namespace MoreCompany
             GameObject backGroundBox = megaPanel.transform.Find("BGBoxes").gameObject;
             backGroundBox.transform.localScale = new Vector3(2.5f, 1, 1);
             
+            // Correctly fitting ui
             MakePlayerHolder(4, original, statUIElements, new Vector3(426.9556f, -0.7932f, 0));
             MakePlayerHolder(5, original, statUIElements, new Vector3(426.9556f, -115.4483f, 0));
             MakePlayerHolder(6, original, statUIElements, new Vector3(-253.6783f, -115.4483f, 0));
             MakePlayerHolder(7, original, statUIElements, new Vector3(-253.6783f, -0.7932f, 0));
+            
+            // We want to hide all other ui elements, this will change once we introduce a new ui
+            for (int i = 8; i < MainClass.newPlayerCount; i++)
+            {
+	            MakePlayerHolder(i, original, statUIElements, new Vector3(10000f, 10000f, 0));
+            }
         }
 
         public static void MakePlayerHolder(int index, GameObject original, EndOfGameStatUIElements uiElements, Vector3 localPosition)

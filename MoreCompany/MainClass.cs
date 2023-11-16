@@ -17,7 +17,7 @@ namespace MoreCompany
 {
     public class MainClass : MelonMod
     {
-        public static int newPlayerCount = 8;
+        public static int newPlayerCount = 32;
         public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
 
         public static Texture2D mainLogo;

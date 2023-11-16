@@ -209,34 +209,17 @@ namespace MoreCompany
             GameObject backGroundBox = megaPanel.transform.Find("BGBoxes").gameObject;
             backGroundBox.transform.localScale = new Vector3(2.5f, 1, 1);
             
+            // Correctly fitting ui
             MakePlayerHolder(4, original, statUIElements, new Vector3(426.9556f, -0.7932f, 0));
             MakePlayerHolder(5, original, statUIElements, new Vector3(426.9556f, -115.4483f, 0));
             MakePlayerHolder(6, original, statUIElements, new Vector3(-253.6783f, -115.4483f, 0));
             MakePlayerHolder(7, original, statUIElements, new Vector3(-253.6783f, -0.7932f, 0));
-            MakePlayerHolder(8, original, statUIElements, new Vector3(-253.6783f, 113.862f, 0));
-            MakePlayerHolder(9, original, statUIElements, new Vector3(426.9556f, 113.862f, 0));
-            MakePlayerHolder(10, original, statUIElements, new Vector3(426.9556f, 228.5169f, 0));
-            MakePlayerHolder(11, original, statUIElements, new Vector3(-253.6783f, 228.5169f, 0));
-            MakePlayerHolder(12, original, statUIElements, new Vector3(-253.6783f, 343.1718f, 0));
-            MakePlayerHolder(13, original, statUIElements, new Vector3(426.9556f, 343.1718f, 0));
-            MakePlayerHolder(14, original, statUIElements, new Vector3(426.9556f, 457.8267f, 0));
-            MakePlayerHolder(15, original, statUIElements, new Vector3(-253.6783f, 457.8267f, 0));
-            MakePlayerHolder(16, original, statUIElements, new Vector3(-253.6783f, 572.4816f, 0));
-            MakePlayerHolder(17, original, statUIElements, new Vector3(426.9556f, 572.4816f, 0));
-            MakePlayerHolder(18, original, statUIElements, new Vector3(426.9556f, 687.1365f, 0));
-            MakePlayerHolder(19, original, statUIElements, new Vector3(-253.6783f, 687.1365f, 0));
-            MakePlayerHolder(20, original, statUIElements, new Vector3(-253.6783f, 801.7914f, 0));
-            MakePlayerHolder(21, original, statUIElements, new Vector3(426.9556f, 801.7914f, 0));
-            MakePlayerHolder(22, original, statUIElements, new Vector3(426.9556f, 916.4463f, 0));
-            MakePlayerHolder(23, original, statUIElements, new Vector3(-253.6783f, 916.4463f, 0));
-            MakePlayerHolder(24, original, statUIElements, new Vector3(-253.6783f, 1031.101f, 0));
-            MakePlayerHolder(25, original, statUIElements, new Vector3(426.9556f, 1031.101f, 0));
-            MakePlayerHolder(26, original, statUIElements, new Vector3(426.9556f, 1145.756f, 0));
-            MakePlayerHolder(27, original, statUIElements, new Vector3(-253.6783f, 1145.756f, 0));
-            MakePlayerHolder(28, original, statUIElements, new Vector3(-253.6783f, 1260.411f, 0));
-            MakePlayerHolder(29, original, statUIElements, new Vector3(426.9556f, 1260.411f, 0));
-            MakePlayerHolder(30, original, statUIElements, new Vector3(426.9556f, 1375.066f, 0));
-            MakePlayerHolder(31, original, statUIElements, new Vector3(-253.6783f, 1375.066f, 0));
+            
+            // We want to hide all other ui elements, this will change once we introduce a new ui
+            for (int i = 8; i < MainClass.newPlayerCount; i++)
+            {
+	            MakePlayerHolder(i, original, statUIElements, new Vector3(10000f, 10000f, 0));
+            }
         }
 
         public static void MakePlayerHolder(int index, GameObject original, EndOfGameStatUIElements uiElements, Vector3 localPosition)

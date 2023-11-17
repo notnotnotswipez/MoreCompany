@@ -56,4 +56,7 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\morecompany.logo" />
+	</ItemGroup>
 </Project>

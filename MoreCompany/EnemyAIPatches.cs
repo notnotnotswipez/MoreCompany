@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using GameNetcodeStuff;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using Random = System.Random;
 

@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using BepInEx;
 using GameNetcodeStuff;
 using HarmonyLib;
-using MelonLoader;
 using MoreCompany.Utils;
 using Steamworks;
 using Steamworks.Data;
@@ -15,20 +15,26 @@ using Object = UnityEngine.Object;
 
 namespace MoreCompany
 {
-    public class MainClass : MelonMod
+    public static class PluginInformation
+    {
+        public const string PLUGIN_NAME = "MoreCompany";
+        public const string PLUGIN_VERSION = "1.1.1";
+        public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
+    }
+
+    [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
+    public class MainClass : BaseUnityPlugin
     {
         public static int newPlayerCount = 32;
         public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
 
         public static Texture2D mainLogo;
 
-        public override void OnInitializeMelon()
+        private void Awake()
         {
+            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
+            harmony.PatchAll();
             
-        }
-
-        public override void OnLateInitializeMelon()
-        {
             AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.logo");
             Texture2D logo = bundle.LoadPersistentAsset<Texture2D>("assets/morecompanyassets/morecompanytransparentred.png");
             bundle.Unload(false);

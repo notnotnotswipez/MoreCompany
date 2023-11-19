@@ -1,13 +1,9 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using MelonLoader;
-
 // Information about a mod is controlled through the following set of
 // attributes. Change these attribute values to modify the information
 // associated with a mod.
-[assembly: MelonInfo(typeof(MoreCompany.MainClass), "MoreCompany", "1.0.0", "notnotnotswipez")]
-[assembly: MelonGame("ZeekerssRBLX", "Lethal Company")]
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information

@@ -1,6 +1,5 @@
 # MoreCompany
-Hello
+Hello,
+this mod is not affiliated with BiggerLobby.
 
-This mod is not affiliated with BiggerLobby
-
-You do not have permission to port my mod to BepinEx as a major purpose of this mod is to get people switching to MelonLoader.
+Although the license of the mod is MIT, it would be really silly to take all of my patches and put them in another mod or just reupload a fork. I can't do anything legally about it but yknow, please?

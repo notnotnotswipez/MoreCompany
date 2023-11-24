@@ -1,5 +1,6 @@
 using System.Linq;
 using HarmonyLib;
+using MoreCompany.Utils;
 using Steamworks;
 using Steamworks.Data;
 using UnityEngine;
@@ -136,7 +137,12 @@ namespace MoreCompany
         public static void Postfix(GameNetworkManager __instance)
         {
             originalVersion = __instance.gameVersionNum;
-            __instance.gameVersionNum = 9999;
+
+            if (!AssemblyChecker.HasAssemblyLoaded("lc_api"))
+            {
+	            // LC_API compatibility fix.
+	            __instance.gameVersionNum += 16440;
+            }
         }
     }
 

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using GameNetcodeStuff;
 using HarmonyLib;
+using MoreCompany.Cosmetics;
+using Steamworks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -39,6 +42,146 @@ namespace MoreCompany
 			GameObject logo = parent.transform.Find("MenuContainer").Find("MainButtons").Find("HeaderImage").gameObject;
 			Image image = logo.GetComponent<Image>();
 			image.sprite = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
+			CosmeticRegistry.SpawnCosmeticGUI();
+		}
+	}
+	
+	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
+	public static class AddUserPlayerListPatch
+	{
+		public static bool Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
+		{
+			QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
+			return false;
+		}
+	}
+	
+	[HarmonyPatch(typeof(QuickMenuManager), "RemoveUserFromPlayerList")]
+	public static class RemoveUserPlayerListPatch
+	{
+		public static bool Prefix(QuickMenuManager __instance)
+		{
+			QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
+			return false;
+		}
+	}
+	
+	[HarmonyPatch(typeof(QuickMenuManager), "Update")]
+	public static class QuickMenuUpdatePatch
+	{
+		public static bool Prefix(QuickMenuManager __instance)
+		{
+			return false;
+		}
+	}
+	
+	[HarmonyPatch(typeof(QuickMenuManager), "NonHostPlayerSlotsEnabled")]
+	public static class QuickMenuDisplayPatch
+	{
+		public static bool Prefix(QuickMenuManager __instance, ref bool __result)
+		{
+			__result = true;
+			return false;
+		}
+	}
+	
+	[HarmonyPatch(typeof(QuickMenuManager), "Start")]
+	public static class QuickmenuVisualInjectPatch
+	{
+		public static GameObject quickMenuScrollInstance;
+		
+		public static void Postfix(QuickMenuManager __instance)
+		{
+			GameObject targetParent = __instance.playerListPanel.transform.Find("Image").gameObject;
+			GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent);
+			spawnedQuickmenu.transform.SetParent(targetParent.transform);
+			RectTransform rectTransform = spawnedQuickmenu.GetComponent<RectTransform>();
+			rectTransform.localPosition = new Vector3(0, -31.2f, 0);
+			rectTransform.localScale = Vector3.one;
+
+			quickMenuScrollInstance = spawnedQuickmenu;
+		}
+
+		public static void PopulateQuickMenu(QuickMenuManager __instance)
+		{
+			int childCount = quickMenuScrollInstance.transform.Find("Holder").childCount;
+			
+			List<GameObject> toDestroy = new List<GameObject>();
+			for (int i = 0; i < childCount; i++)
+			{
+				toDestroy.Add(quickMenuScrollInstance.transform.Find("Holder").GetChild(i).gameObject);
+			}
+			foreach (var gameObject in toDestroy)
+			{
+				GameObject.Destroy(gameObject);
+			}
+			if (!StartOfRound.Instance)
+			{
+				return;
+			}
+
+			for  (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+			{
+				PlayerControllerB playerScript = StartOfRound.Instance.allPlayerScripts[i];
+				if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
+				{
+					GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollInstance.transform.Find("Holder"));
+					RectTransform playerTransform = spawnedPlayer.GetComponent<RectTransform>();
+					playerTransform.localScale = Vector3.one;
+					playerTransform.localPosition = new Vector3(0, -playerTransform.localPosition.y, 0);
+					
+					TextMeshProUGUI playerName = spawnedPlayer.transform.Find("PlayerNameButton").Find("PName").GetComponent<TextMeshProUGUI>();
+					playerName.text = playerScript.playerUsername;
+					
+					Slider playerVolume = spawnedPlayer.transform.Find("PlayerVolumeSlider").GetComponent<Slider>();
+					int finalIndex = i;
+					playerVolume.onValueChanged.AddListener(((f =>
+					{
+						if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
+						{
+							float num = (f / playerVolume.maxValue) + 1f;
+							if (num <= -1f)
+							{
+								SoundManager.Instance.playerVoiceVolumes[finalIndex] = -70f;
+							}
+							else
+							{
+								SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
+							}
+						}
+					})));
+
+					if (StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
+					{
+						playerVolume.gameObject.SetActive(false);
+						spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);
+					}
+
+					Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
+					kickButton.onClick.AddListener((() =>
+					{
+						__instance.KickUserFromServer(finalIndex);
+					}));
+					
+					if (!GameNetworkManager.Instance.isHostingGame)
+					{
+						kickButton.gameObject.SetActive(false);
+					}
+					
+					Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();
+					profileButton.onClick.AddListener((() =>
+					{
+						if (GameNetworkManager.Instance.disableSteam)
+						{
+							return;
+						}
+
+						// There seems to be an issue with SteamFriends.OpenUserOverlay. It works technically, but it personally locked my game up. I couldn't exit
+						// The overlay. I'm not sure if this is a bug with the game or with SteamFriends.OpenUserOverlay, but I'm going to disable it for now.
+						//SteamFriends.OpenUserOverlay(playerScript.playerSteamId, "steamid");
+					}));
+				}
+			}
 		}
 	}
 
@@ -246,19 +389,6 @@ namespace MoreCompany
             uiElements.playerNamesText[index] = playerName.GetComponent<TextMeshProUGUI>();
             uiElements.playerNotesText[index] = playerNotes.GetComponent<TextMeshProUGUI>();
             uiElements.playerStates[index] = playerState.GetComponent<Image>();
-        }
-    }
-
-    [HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
-    public static class QuickMenuStupidFix
-    {
-        public static void Prefix(ulong steamId, string playerName, ref int playerObjectId)
-        {
-            // Should be 3, hes checking 4 for the index in the real game. Silly.
-            if (playerObjectId < 0 || playerObjectId > 3)
-            {
-                playerObjectId = 3;
-            }
         }
     }
 }

@@ -2,15 +2,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
+using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
+using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
 using Steamworks.Data;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Audio;
+using Logger = BepInEx.Logging.Logger;
 using Object = UnityEngine.Object;
 
 namespace MoreCompany
@@ -18,7 +22,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.1.1";
+        public const string PLUGIN_VERSION = "1.4.1";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -29,17 +33,67 @@ namespace MoreCompany
         public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
 
         public static Texture2D mainLogo;
+        public static GameObject quickMenuScrollParent;
+        public static GameObject playerEntry;
+
+        public static GameObject cosmeticGUIInstance;
+        public static GameObject cosmeticButton;
+        
+        public static ManualLogSource StaticLogger;
+        
+        public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
+        
+        public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
 
         private void Awake()
         {
+            StaticLogger = Logger;
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             harmony.PatchAll();
             
-            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.logo");
-            Texture2D logo = bundle.LoadPersistentAsset<Texture2D>("assets/morecompanyassets/morecompanytransparentred.png");
-            bundle.Unload(false);
+            ReadCosmeticsFromFile();
 
-            mainLogo = logo;
+            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets");
+            AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics");
+            CosmeticRegistry.LoadCosmeticsFromAssembly(Assembly.GetExecutingAssembly(), cosmeticsBundle);
+            cosmeticsBundle.Unload(false);
+            
+            LoadAssets(bundle);
+        }
+        
+        private void ReadCosmeticsFromFile()
+        {
+            if (System.IO.File.Exists(cosmeticSavePath))
+            {
+                string[] lines = System.IO.File.ReadAllLines(cosmeticSavePath);
+                foreach (var line in lines)
+                {
+                    CosmeticRegistry.locallySelectedCosmetics.Add(line);
+                }
+            }
+        }
+        
+        public static void WriteCosmeticsToFile()
+        {
+            string built = "";
+            foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
+            {
+                built += cosmetic + "\n";
+            }
+            System.IO.File.WriteAllText(cosmeticSavePath, built);
+        }
+
+        private static void LoadAssets(AssetBundle bundle)
+        {
+            if (bundle)
+            {
+                mainLogo = bundle.LoadPersistentAsset<Texture2D>("assets/morecompanyassets/morecompanytransparentred.png");
+                quickMenuScrollParent = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/quickmenuoverride.prefab");
+                playerEntry = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/playerlistslot.prefab");
+                cosmeticGUIInstance = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/testoverlay.prefab");
+                cosmeticButton = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/cosmeticinstance.prefab");
+                bundle.Unload(false);
+            }
         }
 
 
@@ -48,6 +102,7 @@ namespace MoreCompany
             StartOfRound round = StartOfRound.Instance;
             if (round.allPlayerObjects.Length != MainClass.newPlayerCount)
             {
+                playerIdsAndCosmetics.Clear();
                 uint starting = 10000;
 
                 int difference = MainClass.newPlayerCount - round.allPlayerObjects.Length;
@@ -184,6 +239,30 @@ namespace MoreCompany
         public static bool Prefix(HUDManager __instance)
         {
             return false;
+        }
+    }
+    
+    [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesClientRpc")]
+    public static class SyncShipUnlockablePatch
+    {
+        public static void Prefix(StartOfRound __instance, ref int[] playerSuitIDs, bool shipLightsOn, Vector3[] placeableObjectPositions, Vector3[] placeableObjectRotations, int[] placeableObjects, int[] storedItems, int[] scrapValues, int[] itemSaveData)
+        {
+            NetworkManager networkManager = __instance.NetworkManager;
+            if (networkManager == null || !networkManager.IsListening)
+            {
+                return;
+            }
+
+            if (networkManager.IsServer)
+            {
+                int[] array = new int[MainClass.newPlayerCount];
+                for (int i = 0; i < MainClass.newPlayerCount; i++)
+                {
+                    array[i] = __instance.allPlayerScripts[i].currentSuitID;
+                }
+                
+                playerSuitIDs = array;
+            }
         }
     }
     

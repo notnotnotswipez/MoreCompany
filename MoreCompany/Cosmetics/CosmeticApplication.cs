@@ -9,6 +9,8 @@ namespace MoreCompany.Cosmetics
         public Transform head;
         public Transform hip;
         public Transform lowerArmRight;
+        public Transform shinLeft;
+        public Transform shinRight;
         public List<CosmeticInstance> spawnedCosmetics = new List<CosmeticInstance>();
 
         public void Awake()
@@ -16,6 +18,8 @@ namespace MoreCompany.Cosmetics
             head = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
             lowerArmRight = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
             hip = transform.Find("spine");
+            shinLeft = transform.Find("spine").Find("thigh.L").Find("shin.L");
+            shinRight = transform.Find("spine").Find("thigh.R").Find("shin.R");
         }
 
         private void Update()
@@ -32,11 +36,20 @@ namespace MoreCompany.Cosmetics
                     spawnedCosmetic.transform.position = lowerArmRight.position;
                     spawnedCosmetic.transform.rotation = lowerArmRight.rotation;
                 }
-                else
-                if (spawnedCosmetic.cosmeticType == CosmeticType.HIP)
+                else if (spawnedCosmetic.cosmeticType == CosmeticType.HIP)
                 {
                     spawnedCosmetic.transform.position = hip.position;
                     spawnedCosmetic.transform.rotation = hip.rotation;
+                }
+                else if (spawnedCosmetic.cosmeticType == CosmeticType.L_Shin)
+                {
+                    spawnedCosmetic.transform.position = shinLeft.position;
+                    spawnedCosmetic.transform.rotation = shinLeft.rotation;
+                }
+                else if (spawnedCosmetic.cosmeticType == CosmeticType.R_Shin)
+                {
+                    spawnedCosmetic.transform.position = shinRight.position;
+                    spawnedCosmetic.transform.rotation = shinRight.rotation;
                 }
             }
         }

@@ -38,6 +38,8 @@ namespace MoreCompany.Cosmetics
         WRIST,
         CHEST,
         R_LOWER_ARM,
-        HIP
+        HIP,
+        L_Shin,
+        R_Shin
     }
 }

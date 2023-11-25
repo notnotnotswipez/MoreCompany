@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,14 +19,7 @@ using Object = UnityEngine.Object;
 
 namespace MoreCompany
 {
-    public static class PluginInformation
-    {
-        public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.4.2";
-        public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
-    }
-
-    [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
+    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
         public static int newPlayerCount = 32;
@@ -48,7 +41,7 @@ namespace MoreCompany
         private void Awake()
         {
             StaticLogger = Logger;
-            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
+            Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
             harmony.PatchAll();
             
             ReadCosmeticsFromFile();

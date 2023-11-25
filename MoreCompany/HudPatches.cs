@@ -151,7 +151,8 @@ namespace MoreCompany
 						}
 					})));
 
-					if (StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
+					if (playerScript.IsOwner && playerScript.isPlayerControlled &&
+					    (!playerScript.IsServer || playerScript.isHostPlayerObject))
 					{
 						playerVolume.gameObject.SetActive(false);
 						spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);

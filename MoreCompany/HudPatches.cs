@@ -349,6 +349,10 @@ namespace MoreCompany
             GameObject original = statUIElements.playerNamesText[0].gameObject.transform.parent.gameObject;
             GameObject megaPanel = original.transform.parent.parent.gameObject;
             GameObject backGroundBox = megaPanel.transform.Find("BGBoxes").gameObject;
+            
+            // Set death screen to be above the endgamestats to render below it.
+            megaPanel.transform.parent.Find("DeathScreen").SetSiblingIndex(3);
+            
             backGroundBox.transform.localScale = new Vector3(2.5f, 1, 1);
             
             // Correctly fitting ui

@@ -1,14 +1,14 @@
 using System;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
 
 namespace MoreCompany.Utils
 {
     public class BundleUtilities
     {
-        public static byte[] GetResourceBytes(String filename)
+        public static byte[] GetResourceBytes(String filename, Assembly assembly)
         {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             foreach (var resource in assembly.GetManifestResourceNames())
             {
                 if (resource.Contains(filename))
@@ -25,9 +25,9 @@ namespace MoreCompany.Utils
             return null;
         }
 
-        public static AssetBundle LoadBundleFromInternalAssembly(string filename)
+        public static AssetBundle LoadBundleFromInternalAssembly(string filename, Assembly assembly)
         {
-            AssetBundle bundle = AssetBundle.LoadFromMemory(GetResourceBytes(filename));
+            AssetBundle bundle = AssetBundle.LoadFromMemory(GetResourceBytes(filename, assembly));
             return bundle;
         }
     }

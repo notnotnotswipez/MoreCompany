@@ -37,6 +37,31 @@ namespace MoreCompany.Cosmetics
 
             cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
             
+            GameObject enableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("EnableButton").gameObject;
+            enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                MainClass.showCosmetics = true;
+                MainClass.SaveSettingsToFile();
+            });
+            
+            GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
+            disableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                MainClass.showCosmetics = false;
+                MainClass.SaveSettingsToFile();
+            });
+            
+            if (MainClass.showCosmetics)
+            {
+                enableCosmeticsButton.SetActive(false);
+                disableCosmeticsButton.SetActive(true);
+            }
+            else
+            {
+                enableCosmeticsButton.SetActive(true);
+                disableCosmeticsButton.SetActive(false);
+            }
+            
             PopulateCosmetics();
             UpdateCosmeticsOnDisplayGuy(false);
         }

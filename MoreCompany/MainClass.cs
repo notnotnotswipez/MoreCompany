@@ -22,7 +22,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.4.2";
+        public const string PLUGIN_VERSION = "1.6.0";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -30,11 +30,15 @@ namespace MoreCompany
     public class MainClass : BaseUnityPlugin
     {
         public static int newPlayerCount = 32;
+        public static int maxPlayerCount = 50;
+        public static bool showCosmetics = true;
+        
         public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
         public static GameObject playerEntry;
+        public static GameObject crewCountUI;
 
         public static GameObject cosmeticGUIInstance;
         public static GameObject cosmeticButton;
@@ -44,6 +48,7 @@ namespace MoreCompany
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
         
         public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
+        public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
 
         private void Awake()
         {
@@ -51,13 +56,26 @@ namespace MoreCompany
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             harmony.PatchAll();
             
+            StaticLogger.LogInfo("Loaded MoreCompany FULLY");
+            ReadSettingsFromFile(); 
             ReadCosmeticsFromFile();
+            StaticLogger.LogInfo("Read settings and cosmetics");
 
             AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
             AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
             CosmeticRegistry.LoadCosmeticsFromAssembly(Assembly.GetExecutingAssembly(), cosmeticsBundle);
             cosmeticsBundle.Unload(false);
             
+            SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+            
+            SteamMatchmaking.OnLobbyEntered += (lobby) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+
             LoadAssets(bundle);
         }
         
@@ -82,6 +100,33 @@ namespace MoreCompany
             }
             System.IO.File.WriteAllText(cosmeticSavePath, built);
         }
+        
+        public static void SaveSettingsToFile()
+        {
+            string built = "";
+            built += newPlayerCount + "\n";
+            built += showCosmetics + "\n";
+            System.IO.File.WriteAllText(moreCompanySave, built);
+        }
+        
+        public static void ReadSettingsFromFile()
+        {
+            if (System.IO.File.Exists(moreCompanySave))
+            {
+                string[] lines = System.IO.File.ReadAllLines(moreCompanySave);
+                try
+                {
+                    newPlayerCount = int.Parse(lines[0]);
+                    showCosmetics = bool.Parse(lines[1]);
+                }
+                catch (Exception e)
+                {
+                    StaticLogger.LogError("Failed to read settings from file, resetting to default");
+                    newPlayerCount = 32;
+                    showCosmetics = true;
+                }
+            }
+        }
 
         private static void LoadAssets(AssetBundle bundle)
         {
@@ -92,6 +137,7 @@ namespace MoreCompany
                 playerEntry = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/playerlistslot.prefab");
                 cosmeticGUIInstance = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/testoverlay.prefab");
                 cosmeticButton = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/cosmeticinstance.prefab");
+                crewCountUI = bundle.LoadPersistentAsset<GameObject>("assets/morecompanyassets/crewcountfield.prefab");
                 bundle.Unload(false);
             }
         }
@@ -157,6 +203,26 @@ namespace MoreCompany
                     round.gameStats.allPlayerStats[originalLength + i] = new PlayerStats();
                     round.allPlayerScripts[originalLength + i] = newPlayerScript;
                     round.playerSpawnPositions[originalLength + i] = round.playerSpawnPositions[3];
+                    
+                }
+            }
+        }
+
+        public static void EnablePlayerObjectsBasedOnConnected()
+        {
+            int connectedPlayers = StartOfRound.Instance.connectedPlayersAmount;
+            foreach (var playerScript in StartOfRound.Instance.allPlayerScripts)
+            {
+                for (int j = 0; j < connectedPlayers + 1; j++)
+                {
+                    if (!playerScript.isPlayerControlled)
+                    {
+                        playerScript.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        playerScript.gameObject.SetActive(true);
+                    }
                 }
             }
         }
@@ -310,6 +376,7 @@ namespace MoreCompany
     {
         public static void Prefix(ref int maxMembers)
         {
+            MainClass.ReadSettingsFromFile();
             maxMembers = MainClass.newPlayerCount;
         }
     }

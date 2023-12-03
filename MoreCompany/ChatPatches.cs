@@ -147,7 +147,11 @@ namespace MoreCompany
                     continue;
                 }
                 cosmeticsToApply.Add(cosmeticId);
-                cosmeticApplication.ApplyCosmetic(cosmeticId, true);
+
+                if (MainClass.showCosmetics)
+                {
+                    cosmeticApplication.ApplyCosmetic(cosmeticId, true);
+                }
             }
             
             if (playerIdNumeric == StartOfRound.Instance.thisClientPlayerId)

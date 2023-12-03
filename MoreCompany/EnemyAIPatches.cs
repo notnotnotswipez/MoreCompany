@@ -290,6 +290,75 @@ namespace MoreCompany
 		}
 	}
 
+	[HarmonyPatch(typeof(SpringManAI), "DoAIInterval")]
+	public static class SpringManAIIntervalPatch
+	{
+		public static bool Prefix(SpringManAI __instance)
+		{
+			if (__instance.moveTowardsDestination)
+			{
+				__instance.agent.SetDestination(__instance.destination);
+			}
+			__instance.SyncPositionToClients();
+			if (StartOfRound.Instance.allPlayersDead)
+			{
+				return false;
+			}
+			if (__instance.isEnemyDead)
+			{
+				return false;
+			}
+			int currentBehaviourStateIndex = __instance.currentBehaviourStateIndex;
+			if (currentBehaviourStateIndex != 0)
+			{
+				if (currentBehaviourStateIndex != 1)
+				{
+					return false;
+				}
+				if (__instance.searchForPlayers.inProgress)
+				{
+					__instance.StopSearch(__instance.searchForPlayers, true);
+				}
+				if (__instance.TargetClosestPlayer(1.5f, false, 70f))
+				{
+					PlayerControllerB previousTarget = ReflectionUtils.GetFieldValue<PlayerControllerB>(__instance, "previousTarget");
+					if (previousTarget != __instance.targetPlayer)
+					{
+						ReflectionUtils.SetFieldValue(__instance, "previousTarget", __instance.targetPlayer);
+						__instance.ChangeOwnershipOfEnemy(__instance.targetPlayer.actualClientId);
+					}
+					__instance.movingTowardsTargetPlayer = true;
+					return false;
+				}
+				__instance.SwitchToBehaviourState(0);
+				__instance.ChangeOwnershipOfEnemy(StartOfRound.Instance.allPlayerScripts[0].actualClientId);
+			}
+			else
+			{
+				if (!__instance.IsServer)
+				{
+					__instance.ChangeOwnershipOfEnemy(StartOfRound.Instance.allPlayerScripts[0].actualClientId);
+					return false;
+				}
+				for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+				{
+					if (__instance.PlayerIsTargetable(StartOfRound.Instance.allPlayerScripts[i], false, false) && !Physics.Linecast(__instance.transform.position + Vector3.up * 0.5f, StartOfRound.Instance.allPlayerScripts[i].gameplayCamera.transform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) && Vector3.Distance(__instance.transform.position, StartOfRound.Instance.allPlayerScripts[i].transform.position) < 30f)
+					{
+						__instance.SwitchToBehaviourState(1);
+						return false;
+					}
+				}
+				if (!__instance.searchForPlayers.inProgress)
+				{
+					__instance.movingTowardsTargetPlayer = false;
+					__instance.StartSearch(__instance.transform.position, __instance.searchForPlayers);
+					return false;
+				}
+			}
+			return false;
+		}
+	}
+
 	[HarmonyPatch(typeof(EnemyAI), "GetClosestPlayer")]
 	public static class GetClosestPlayerPatch
 	{
@@ -297,7 +366,7 @@ namespace MoreCompany
 		{
 			PlayerControllerB playerControllerB = null;
 			__instance.mostOptimalDistance = 2000f;
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
 			{
 				if (__instance.PlayerIsTargetable(StartOfRound.Instance.allPlayerScripts[i], cannotBeInShip, false))
 				{

@@ -138,10 +138,10 @@ namespace MoreCompany
         {
             originalVersion = __instance.gameVersionNum;
 
+            // LC_API compatibility.
             if (!AssemblyChecker.HasAssemblyLoaded("lc_api"))
             {
-	            // LC_API compatibility fix.
-	            __instance.gameVersionNum += 16440;
+	            __instance.gameVersionNum = 9999;
             }
         }
     }

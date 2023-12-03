@@ -89,10 +89,6 @@ namespace MoreCompany.Cosmetics
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstanceGameObject.GetComponent<CosmeticInstance>();
                 spawnedCosmetics.Add(cosmeticInstanceBehavior);
             }
-            else
-            {
-                MainClass.StaticLogger.LogError("Cosmetic with id: " + cosmeticId + " does not exist!");
-            }
         }
     }
 }

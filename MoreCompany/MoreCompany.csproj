@@ -442,13 +442,18 @@
   <ItemGroup>
     <Compile Include="AudioMixerPatches.cs" />
     <Compile Include="ChatPatches.cs" />
+    <Compile Include="Cosmetics\BuiltIn\BunnyEarsCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\DenimHatCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\FancyGlassesCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\FancyPantsCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\HardHatCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\JesterHatCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\KittyEarsCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\PlagueMaskCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\RealisticEyeballsCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\RudolphCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\SantaHatCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\SlimeThingCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\ThreeDGlassesCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\GunHolsterCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\PartyGlassesCosmetic.cs" />

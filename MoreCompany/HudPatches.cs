@@ -38,11 +38,54 @@ namespace MoreCompany
 	{
 		public static void Postfix(MenuManager __instance)
 		{
-			GameObject parent = __instance.transform.parent.gameObject;
-			GameObject logo = parent.transform.Find("MenuContainer").Find("MainButtons").Find("HeaderImage").gameObject;
-			Image image = logo.GetComponent<Image>();
-			image.sprite = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
-			CosmeticRegistry.SpawnCosmeticGUI();
+			try
+			{
+				GameObject parent = __instance.transform.parent.gameObject;
+				GameObject logo = parent.transform.Find("MenuContainer").Find("MainButtons").Find("HeaderImage").gameObject;
+				Image image = logo.GetComponent<Image>();
+				
+				MainClass.ReadSettingsFromFile();
+		
+				image.sprite = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
+				
+				CosmeticRegistry.SpawnCosmeticGUI();
+			
+				// Create the crew text display
+				Transform serverOptionsContainer = parent.transform.Find("MenuContainer").Find("LobbyHostSettings").Find("Panel").Find("LobbyHostOptions").Find("OptionsNormal");
+
+				GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, serverOptionsContainer);
+				RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
+				rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
+			
+				TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
+				inputField.characterLimit = 3;
+			
+				inputField.text = MainClass.newPlayerCount.ToString();
+			
+				inputField.onValueChanged.AddListener((s =>
+				{
+
+					if (int.TryParse(s, out int result))
+					{
+						MainClass.newPlayerCount = result;
+						MainClass.newPlayerCount = Mathf.Clamp(MainClass.newPlayerCount, 1, MainClass.maxPlayerCount);
+						inputField.text = MainClass.newPlayerCount.ToString();
+						MainClass.SaveSettingsToFile();
+					}
+					else 
+					{
+						if (s.Length != 0)
+						{
+							inputField.text = MainClass.newPlayerCount.ToString();
+							inputField.caretPosition = 1;
+						}
+					}
+				}));
+			}
+			catch (Exception e)
+			{
+				// Ignore
+			}
 		}
 	}
 	
@@ -52,6 +95,7 @@ namespace MoreCompany
 		public static bool Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
 		{
 			QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
+			MainClass.EnablePlayerObjectsBasedOnConnected();
 			return false;
 		}
 	}
@@ -370,7 +414,12 @@ namespace MoreCompany
 
         public static void MakePlayerHolder(int index, GameObject original, EndOfGameStatUIElements uiElements, Vector3 localPosition)
         {
-            GameObject spawned = Object.Instantiate(original);
+	        if (index+1 > MainClass.newPlayerCount)
+	        {
+		        return;
+	        }
+
+	        GameObject spawned = Object.Instantiate(original);
             RectTransform rectTransform = spawned.GetComponent<RectTransform>();
             RectTransform originalRectTransform = original.GetComponent<RectTransform>();
             rectTransform.SetParent(originalRectTransform.parent);

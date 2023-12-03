@@ -4,7 +4,7 @@ namespace MoreCompany.Cosmetics.BuiltIn
     {
         public override string gameObjectPath => "assets/morecompanyassets/cosmetics/mustacheandmonocle.prefab";
         public override string cosmeticId => "builtin.fancypants";
-        public override string textureIconPath => "assets/morecompanyassets/cosmetics/gunholstericon.png";
+        public override string textureIconPath => "assets/morecompanyassets/cosmetics/fancypantsicon.png";
         
         public override CosmeticType cosmeticType => CosmeticType.HAT;
     }

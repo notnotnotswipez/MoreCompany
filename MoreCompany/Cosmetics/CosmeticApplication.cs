@@ -11,46 +11,21 @@ namespace MoreCompany.Cosmetics
         public Transform lowerArmRight;
         public Transform shinLeft;
         public Transform shinRight;
+        public Transform chest;
         public List<CosmeticInstance> spawnedCosmetics = new List<CosmeticInstance>();
 
         public void Awake()
         {
             head = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
+            chest = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003");
             lowerArmRight = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
             hip = transform.Find("spine");
             shinLeft = transform.Find("spine").Find("thigh.L").Find("shin.L");
             shinRight = transform.Find("spine").Find("thigh.R").Find("shin.R");
-        }
 
-        private void Update()
-        {
-            foreach (var spawnedCosmetic in spawnedCosmetics)
+            foreach (CosmeticInstance cosmeticInstance in spawnedCosmetics)
             {
-                if (spawnedCosmetic.cosmeticType == CosmeticType.HAT)
-                {
-                    spawnedCosmetic.transform.position = head.position;
-                    spawnedCosmetic.transform.rotation = head.rotation;
-                }
-                else if (spawnedCosmetic.cosmeticType == CosmeticType.R_LOWER_ARM)
-                {
-                    spawnedCosmetic.transform.position = lowerArmRight.position;
-                    spawnedCosmetic.transform.rotation = lowerArmRight.rotation;
-                }
-                else if (spawnedCosmetic.cosmeticType == CosmeticType.HIP)
-                {
-                    spawnedCosmetic.transform.position = hip.position;
-                    spawnedCosmetic.transform.rotation = hip.rotation;
-                }
-                else if (spawnedCosmetic.cosmeticType == CosmeticType.L_Shin)
-                {
-                    spawnedCosmetic.transform.position = shinLeft.position;
-                    spawnedCosmetic.transform.rotation = shinLeft.rotation;
-                }
-                else if (spawnedCosmetic.cosmeticType == CosmeticType.R_Shin)
-                {
-                    spawnedCosmetic.transform.position = shinRight.position;
-                    spawnedCosmetic.transform.rotation = shinRight.rotation;
-                }
+                ParentCosmetic(cosmeticInstance);
             }
         }
 
@@ -88,7 +63,41 @@ namespace MoreCompany.Cosmetics
                 cosmeticInstanceGameObject.SetActive(startEnabled);
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstanceGameObject.GetComponent<CosmeticInstance>();
                 spawnedCosmetics.Add(cosmeticInstanceBehavior);
+                if (startEnabled)
+                {
+                    ParentCosmetic(cosmeticInstanceBehavior);
+                }
             }
+        }
+
+        private void ParentCosmetic(CosmeticInstance cosmeticInstance)
+        {
+            Transform targetTransform = null;
+            switch (cosmeticInstance.cosmeticType)
+            {
+                case CosmeticType.HAT:
+                    targetTransform = head;
+                    break;
+                case CosmeticType.R_LOWER_ARM:
+                    targetTransform = lowerArmRight;
+                    break;
+                case CosmeticType.HIP:
+                    targetTransform = hip;
+                    break;
+                case CosmeticType.L_SHIN:
+                    targetTransform = shinLeft;
+                    break;
+                case CosmeticType.R_SHIN:
+                    targetTransform = shinRight;
+                    break;
+                case CosmeticType.CHEST:
+                    targetTransform = chest;
+                    break;
+            }
+            
+            cosmeticInstance.transform.position = targetTransform.position;
+            cosmeticInstance.transform.rotation = targetTransform.rotation;
+            cosmeticInstance.transform.parent = targetTransform;
         }
     }
 }

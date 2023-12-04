@@ -449,6 +449,8 @@
     <Compile Include="Cosmetics\BuiltIn\HardHatCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\JesterHatCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\KittyEarsCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\MimeMaskCosmetic.cs" />
+    <Compile Include="Cosmetics\BuiltIn\OutOfOrderCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\PlagueMaskCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\RealisticEyeballsCosmetic.cs" />
     <Compile Include="Cosmetics\BuiltIn\RudolphCosmetic.cs" />

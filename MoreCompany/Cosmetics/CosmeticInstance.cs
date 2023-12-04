@@ -39,7 +39,7 @@ namespace MoreCompany.Cosmetics
         CHEST,
         R_LOWER_ARM,
         HIP,
-        L_Shin,
-        R_Shin
+        L_SHIN,
+        R_SHIN
     }
 }

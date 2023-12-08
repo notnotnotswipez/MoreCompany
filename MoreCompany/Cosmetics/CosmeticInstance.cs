@@ -15,7 +15,7 @@ namespace MoreCompany.Cosmetics
         public virtual string gameObjectPath { get; }
         public virtual string cosmeticId { get;}
         public virtual string textureIconPath { get; }
-        public virtual CosmeticType cosmeticType { get;  }
+        public CosmeticType cosmeticType { get;  }
 
         public void LoadFromBundle(AssetBundle bundle)
         {

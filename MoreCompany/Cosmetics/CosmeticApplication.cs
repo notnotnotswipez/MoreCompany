@@ -23,10 +23,7 @@ namespace MoreCompany.Cosmetics
             shinLeft = transform.Find("spine").Find("thigh.L").Find("shin.L");
             shinRight = transform.Find("spine").Find("thigh.R").Find("shin.R");
 
-            foreach (CosmeticInstance cosmeticInstance in spawnedCosmetics)
-            {
-                ParentCosmetic(cosmeticInstance);
-            }
+            RefreshAllCosmeticPositions();
         }
 
         private void OnDisable()
@@ -67,6 +64,14 @@ namespace MoreCompany.Cosmetics
                 {
                     ParentCosmetic(cosmeticInstanceBehavior);
                 }
+            }
+        }
+        
+        public void RefreshAllCosmeticPositions()
+        {
+            foreach (var spawnedCosmetic in spawnedCosmetics)
+            {
+                ParentCosmetic(spawnedCosmetic);
             }
         }
 

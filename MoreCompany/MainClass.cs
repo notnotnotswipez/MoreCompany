@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
@@ -22,7 +23,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.6.0";
+        public const string PLUGIN_VERSION = "1.7.0";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -49,12 +50,24 @@ namespace MoreCompany
         
         public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
         public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
+        
+        public static string dynamicCosmeticsPath = Paths.GameRootPath + "/MoreCompanyCosmetics";
 
         private void Awake()
         {
             StaticLogger = Logger;
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             harmony.PatchAll();
+            
+            StaticLogger.LogInfo("Loading MoreCompany...");
+            
+            StaticLogger.LogInfo("Checking: "+dynamicCosmeticsPath);
+            
+            if (!Directory.Exists(dynamicCosmeticsPath))
+            {
+                StaticLogger.LogInfo("Creating cosmetics directory");
+                Directory.CreateDirectory(dynamicCosmeticsPath);
+            }
             
             StaticLogger.LogInfo("Loaded MoreCompany FULLY");
             ReadSettingsFromFile(); 
@@ -63,7 +76,7 @@ namespace MoreCompany
 
             AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
             AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
-            CosmeticRegistry.LoadCosmeticsFromAssembly(Assembly.GetExecutingAssembly(), cosmeticsBundle);
+            CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
             cosmeticsBundle.Unload(false);
             
             SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
@@ -75,10 +88,31 @@ namespace MoreCompany
             {
                 newPlayerCount = lobby.MaxMembers;
             };
+            
+            StaticLogger.LogInfo("Loading USER COSMETICS...");
+            RecursiveCosmeticLoad(dynamicCosmeticsPath);
 
             LoadAssets(bundle);
         }
-        
+
+        private void RecursiveCosmeticLoad(string directory)
+        {
+            foreach (var subDirectory in Directory.GetDirectories(directory))
+            {
+                RecursiveCosmeticLoad(subDirectory);
+            }
+            
+            foreach (var file in Directory.GetFiles(directory))
+            {
+                if (file.EndsWith(".cosmetics"))
+                {
+                    AssetBundle bundle = AssetBundle.LoadFromFile(file);
+                    CosmeticRegistry.LoadCosmeticsFromBundle(bundle);
+                    bundle.Unload(false);
+                }
+            }
+        }
+
         private void ReadCosmeticsFromFile()
         {
             if (System.IO.File.Exists(cosmeticSavePath))

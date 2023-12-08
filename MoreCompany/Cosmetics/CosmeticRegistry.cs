@@ -15,6 +15,26 @@ namespace MoreCompany.Cosmetics
         private static CosmeticApplication cosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
 
+        public static void LoadCosmeticsFromBundle(AssetBundle bundle)
+        {
+            foreach (var potentialPrefab in bundle.GetAllAssetNames())
+            {
+                if (!potentialPrefab.EndsWith(".prefab"))
+                {
+                    continue;
+                }
+                
+                GameObject cosmeticInstance = bundle.LoadPersistentAsset<GameObject>(potentialPrefab);
+                CosmeticInstance cosmeticInstanceBehavior = cosmeticInstance.GetComponent<CosmeticInstance>();
+                if (cosmeticInstanceBehavior == null)
+                {
+                    continue;
+                }
+                MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle");
+                cosmeticInstances.Add(cosmeticInstanceBehavior.cosmeticId, cosmeticInstanceBehavior);
+            }
+        }
+        
         public static void LoadCosmeticsFromAssembly(Assembly assembly, AssetBundle bundle)
         {
             foreach (var type in assembly.GetTypes())

@@ -23,7 +23,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.7.0";
+        public const string PLUGIN_VERSION = "1.7.1";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -51,14 +51,24 @@ namespace MoreCompany
         public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
         public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
         
-        public static string dynamicCosmeticsPath = Paths.GameRootPath + "/MoreCompanyCosmetics";
+        public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
 
         private void Awake()
         {
             StaticLogger = Logger;
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
-            harmony.PatchAll();
+
+            try
+            {
+                harmony.PatchAll();
+            }
+            catch (Exception e)
+            {
+                StaticLogger.LogError("Failed to patch: " + e);
+            }
             
+            ManualHarmonyPatches.ManualPatch(harmony);
+
             StaticLogger.LogInfo("Loading MoreCompany...");
             
             StaticLogger.LogInfo("Checking: "+dynamicCosmeticsPath);
@@ -262,7 +272,6 @@ namespace MoreCompany
         }
     }
 
-
     [HarmonyPatch(typeof(PlayerControllerB), "SendNewPlayerValuesServerRpc")]
     public static class SendNewPlayerValuesServerRpcPatch
     {
@@ -332,11 +341,9 @@ namespace MoreCompany
     }
 
     
-
-    [HarmonyPatch(typeof(HUDManager), "SyncAllPlayerLevelsServerRpc")]
     public static class HUDManagerBullshitPatch
     {
-        public static bool Prefix(HUDManager __instance)
+        public static bool ManualPrefix(HUDManager __instance)
         {
             return false;
         }

@@ -159,7 +159,7 @@ namespace MoreCompany
 			{
 				GameObject.Destroy(gameObject);
 			}
-			if (!StartOfRound.Instance)
+			if (!StartOfRound.Instance || !StartOfRound.Instance.localPlayerController)
 			{
 				return;
 			}

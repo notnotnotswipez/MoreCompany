@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
+using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
 using MoreCompany.Cosmetics;
@@ -13,12 +16,23 @@ namespace MoreCompany
     {
         public static bool Prefix(HUDManager __instance, string chatMessage, int playerId = -1)
         {
+            if (StartOfRound.Instance.IsHost)
+            {
+                // DEBUG COMMANDS
+                if (chatMessage.StartsWith("/mc") && DebugCommandRegistry.commandEnabled)
+                {
+                    String command = chatMessage.Replace("/mc ", "");
+                    DebugCommandRegistry.HandleCommand(command.Split(' '));
+                    return false;
+                }
+            }
+
             if (chatMessage.StartsWith("[morecompanycosmetics]"))
             {
                 ReflectionUtils.InvokeMethod(__instance, "AddPlayerChatMessageServerRpc", new object[] {chatMessage, 99});
                 return false;
             }
-
+            
             return true;
         }
     }
@@ -161,7 +175,7 @@ namespace MoreCompany
             
             foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
             {
-                cosmeticSpawned.transform.localScale *= 0.38f;
+                cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
             }
 
             MainClass.playerIdsAndCosmetics.Remove(playerIdNumeric);

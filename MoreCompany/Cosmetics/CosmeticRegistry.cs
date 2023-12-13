@@ -15,6 +15,8 @@ namespace MoreCompany.Cosmetics
         private static CosmeticApplication cosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
 
+        public const float COSMETIC_PLAYER_SCALE_MULT = 0.38f;
+
         public static void LoadCosmeticsFromBundle(AssetBundle bundle)
         {
             foreach (var potentialPrefab in bundle.GetAllAssetNames())
@@ -23,7 +25,6 @@ namespace MoreCompany.Cosmetics
                 {
                     continue;
                 }
-                
                 GameObject cosmeticInstance = bundle.LoadPersistentAsset<GameObject>(potentialPrefab);
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstance.GetComponent<CosmeticInstance>();
                 if (cosmeticInstanceBehavior == null)

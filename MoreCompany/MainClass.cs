@@ -23,7 +23,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.7.1";
+        public const string PLUGIN_VERSION = "1.7.2";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -52,6 +52,7 @@ namespace MoreCompany
         public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
         
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+        
 
         private void Awake()
         {
@@ -79,7 +80,6 @@ namespace MoreCompany
                 Directory.CreateDirectory(dynamicCosmeticsPath);
             }
             
-            StaticLogger.LogInfo("Loaded MoreCompany FULLY");
             ReadSettingsFromFile(); 
             ReadCosmeticsFromFile();
             StaticLogger.LogInfo("Read settings and cosmetics");
@@ -100,9 +100,11 @@ namespace MoreCompany
             };
             
             StaticLogger.LogInfo("Loading USER COSMETICS...");
-            RecursiveCosmeticLoad(dynamicCosmeticsPath);
+            RecursiveCosmeticLoad(Paths.PluginPath);
 
             LoadAssets(bundle);
+            
+            StaticLogger.LogInfo("Loaded MoreCompany FULLY");
         }
 
         private void RecursiveCosmeticLoad(string directory)

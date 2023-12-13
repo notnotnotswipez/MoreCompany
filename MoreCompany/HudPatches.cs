@@ -45,7 +45,7 @@ namespace MoreCompany
 				Image image = logo.GetComponent<Image>();
 				
 				MainClass.ReadSettingsFromFile();
-		
+
 				image.sprite = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
 				
 				CosmeticRegistry.SpawnCosmeticGUI();

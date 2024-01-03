@@ -202,10 +202,11 @@ namespace MoreCompany
 					}
 
 					Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
-					kickButton.onClick.AddListener((() =>
+					kickButton.onClick.AddListener(() =>
 					{
+                        Debug.Log($"[Event]: {finalIndex}");
 						__instance.KickUserFromServer(finalIndex);
-					}));
+					});
 					
 					if (!GameNetworkManager.Instance.isHostingGame)
 					{
@@ -213,7 +214,7 @@ namespace MoreCompany
 					}
 					
 					Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();
-					profileButton.onClick.AddListener((() =>
+					profileButton.onClick.AddListener(() =>
 					{
 						if (GameNetworkManager.Instance.disableSteam)
 						{
@@ -222,10 +223,35 @@ namespace MoreCompany
 
 						// There seems to be an issue with SteamFriends.OpenUserOverlay. It works technically, but it personally locked my game up. I couldn't exit
 						// The overlay. I'm not sure if this is a bug with the game or with SteamFriends.OpenUserOverlay, but I'm going to disable it for now.
-						//SteamFriends.OpenUserOverlay(playerScript.playerSteamId, "steamid");
-					}));
+						
+						 SteamFriends.OpenUserOverlay(playerScript.playerSteamId, "steamid");
+
+					});
 				}
 			}
+		}
+				}
+
+
+    [HarmonyPatch(typeof(QuickMenuManager), "ConfirmKickUserFromServer")]
+    public static class TestPatch
+	{
+
+		[HarmonyPrefix]
+        public static bool Prefix(QuickMenuManager __instance, int ___playerObjToKick)
+		{
+			Debug.Log(__instance.ConfirmKickUserPanel);
+            Debug.Log(___playerObjToKick);
+			if (___playerObjToKick > 0)
+			{
+				StartOfRound.Instance.KickPlayer(___playerObjToKick);
+				__instance.ConfirmKickUserPanel.SetActive(value: false);
+			} else
+			{
+				Debug.Log($"[FATAL]: ID: {___playerObjToKick} is the HOST!");
+                __instance.ConfirmKickUserPanel.SetActive(value: false);
+			}
+			return false;
 		}
 	}
 

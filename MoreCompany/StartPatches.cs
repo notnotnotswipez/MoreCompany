@@ -99,11 +99,12 @@ namespace MoreCompany
                 int profitQuota = TimeOfDay.Instance.profitQuota;
                 int quotaFulfilled = TimeOfDay.Instance.quotaFulfilled;
                 int num2 = (int)TimeOfDay.Instance.timeUntilDeadline;
+                bool isChallenge = StartOfRound.Instance.isChallengeFile;
                 ReflectionUtils.InvokeMethod(__instance, "OnPlayerConnectedClientRpc", new object[]
                 {
                     clientId, __instance.connectedPlayersAmount, list2.ToArray(), num,
                     groupCredits,
-                    __instance.currentLevelID, profitQuota, num2, quotaFulfilled, __instance.randomMapSeed
+                    __instance.currentLevelID, profitQuota, num2, quotaFulfilled, __instance.randomMapSeed, isChallenge
                 });
                 __instance.ClientPlayerList.Add(clientId, num);
                 Debug.Log(string.Format("client id connecting: {0} ; their corresponding player object id: {1}",

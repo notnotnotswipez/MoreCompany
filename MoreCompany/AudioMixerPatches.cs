@@ -3,38 +3,37 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace MoreCompany
+namespace MoreCompany;
+
+[HarmonyPatch(typeof(AudioMixer), "SetFloat")]
+public static class AudioMixerSetFloatPatch
 {
-    [HarmonyPatch(typeof(AudioMixer), "SetFloat")]
-    public static class AudioMixerSetFloatPatch
+    public static bool Prefix(string name, float value)
     {
-        public static bool Prefix(string name, float value)
+        if (name.StartsWith("PlayerVolume") || name.StartsWith("PlayerPitch"))
         {
-            if (name.StartsWith("PlayerVolume") || name.StartsWith("PlayerPitch"))
-            {
-                string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");
-                int playerObjectNumber = int.Parse(cutName);
+            string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");
+            int playerObjectNumber = int.Parse(cutName);
                 
             
 
-                PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerObjectNumber];
-                AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
-                if (playerControllerB != null && voiceSource)
+            PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerObjectNumber];
+            AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
+            if (playerControllerB != null && voiceSource)
+            {
+                if (name.StartsWith("PlayerVolume"))
                 {
-                    if (name.StartsWith("PlayerVolume"))
-                    {
-                        voiceSource.volume = value/16;
-                    }
-                    else if (name.StartsWith("PlayerPitch"))
-                    {
-                        voiceSource.pitch = value;
-                    }
+                    voiceSource.volume = value/16;
                 }
-             
-                return false;
+                else if (name.StartsWith("PlayerPitch"))
+                {
+                    voiceSource.pitch = value;
+                }
             }
-
-            return true;
+             
+            return false;
         }
+
+        return true;
     }
 }

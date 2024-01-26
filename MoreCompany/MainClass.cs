@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
@@ -11,12 +9,8 @@ using HarmonyLib;
 using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
-using Steamworks.Data;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Audio;
-using Logger = BepInEx.Logging.Logger;
-using Object = UnityEngine.Object;
 
 namespace MoreCompany;
 

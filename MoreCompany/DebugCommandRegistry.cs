@@ -3,7 +3,6 @@ using System.Linq;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
-using Object = System.Object;
 
 namespace MoreCompany;
 

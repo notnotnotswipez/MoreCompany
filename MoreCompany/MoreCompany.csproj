@@ -78,7 +78,6 @@
     <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "D:\SteamLibrary\steamapps\common\Lethal Company\BepInEx\plugins\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>

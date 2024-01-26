@@ -78,4 +78,11 @@
   <ItemGroup Condition="$(CI) == 'true'">
     <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />
   </ItemGroup>
+
+  <!-- prevent referenced assemblies from being copied to output folders -->
+  <Target Name="ClearReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"/>
+    </ItemGroup>
+  </Target>
 </Project>

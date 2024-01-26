@@ -22,6 +22,12 @@
     <Copyright>Copyright © NotNotSwipez 2023</Copyright>
   </PropertyGroup>
   
+  <!-- Embedded resources -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\morecompany.assets" />
+    <EmbeddedResource Include="Resources\morecompany.cosmetics" />
+  </ItemGroup>
+  
   <!-- Configuration-specific properties -->
   <PropertyGroup Condition="$(Configuration) == 'Debug'">
     <Optimize>false</Optimize>
@@ -439,13 +445,7 @@
       <HintPath>managed\UnityEngine.XRModule.dll</HintPath>
     </Reference>
   </ItemGroup>
-  
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\morecompany.assets" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\morecompany.cosmetics" />
-  </ItemGroup>
+
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "D:\SteamLibrary\steamapps\common\Lethal Company\BepInEx\plugins\$(TargetFileName)"</PostBuildEvent>

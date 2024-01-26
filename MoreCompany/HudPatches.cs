@@ -51,7 +51,7 @@ namespace MoreCompany
 				CosmeticRegistry.SpawnCosmeticGUI();
 			
 				// Create the crew text display
-				Transform serverOptionsContainer = parent.transform.Find("MenuContainer").Find("LobbyHostSettings").Find("Panel").Find("LobbyHostOptions").Find("OptionsNormal");
+				Transform serverOptionsContainer = parent.transform.Find("MenuContainer").Find("LobbyHostSettings").Find("HostSettingsContainer").Find("LobbyHostOptions").Find("OptionsNormal");
 
 				GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, serverOptionsContainer);
 				RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();

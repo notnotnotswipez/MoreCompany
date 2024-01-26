@@ -15,6 +15,8 @@ namespace MoreCompany
                 string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");
                 int playerObjectNumber = int.Parse(cutName);
                 
+            
+
                 PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerObjectNumber];
                 AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
                 if (playerControllerB != null && voiceSource)

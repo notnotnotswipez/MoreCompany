@@ -32,6 +32,12 @@ namespace MoreCompany.Cosmetics
                     continue;
                 }
                 MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle");
+                if (cosmeticInstances.ContainsKey(cosmeticInstanceBehavior.cosmeticId))
+                {
+                    MainClass.StaticLogger.LogError("Duplicate cosmetic id: " + cosmeticInstanceBehavior.cosmeticId);
+                    continue;
+                }
+
                 cosmeticInstances.Add(cosmeticInstanceBehavior.cosmeticId, cosmeticInstanceBehavior);
             }
         }

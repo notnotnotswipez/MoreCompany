@@ -51,76 +51,77 @@ namespace MoreCompany
     [HarmonyPatch(typeof(StartOfRound), "OnClientConnect")]
     public static class OnClientConnectedPatch
     {
-        public static bool Prefix(StartOfRound __instance, ulong clientId)
-        {
-            if (!__instance.IsServer)
-            {
-                return false;
-            }
+	    public static bool Prefix(StartOfRound __instance, ulong clientId)
+	    {
+		    if (!__instance.IsServer)
+		    {
+			    return false;
+		    }
 
-            Debug.Log("player connected");
-            Debug.Log(string.Format("connected players #: {0}", __instance.connectedPlayersAmount));
-            try
-            {
-                List<int> list = __instance.ClientPlayerList.Values.ToList<int>();
-                Debug.Log(string.Format("Connecting new player on host; clientId: {0}", clientId));
-                int num = 0;
-                for (int i = 1; i < MainClass.newPlayerCount; i++)
-                {
-                    if (!list.Contains(i))
-                    {
-                        num = i;
-                        break;
-                    }
-                }
+		    Debug.Log("player connected");
+		    Debug.Log(string.Format("connected players #: {0}", __instance.connectedPlayersAmount));
+		    try
+		    {
+			    List<int> list = __instance.ClientPlayerList.Values.ToList<int>();
+			    Debug.Log(string.Format("Connecting new player on host; clientId: {0}", clientId));
+			    int num = 0;
+			    for (int i = 1; i < MainClass.newPlayerCount; i++)
+			    {
+				    if (!list.Contains(i))
+				    {
+					    num = i;
+					    break;
+				    }
+			    }
 
-                __instance.allPlayerScripts[num].actualClientId = clientId;
-                __instance.allPlayerObjects[num].GetComponent<NetworkObject>().ChangeOwnership(clientId);
-                Debug.Log(string.Format("New player assigned object id: {0}", __instance.allPlayerObjects[num]));
-                List<ulong> list2 = new List<ulong>();
-                for (int j = 0; j < __instance.allPlayerObjects.Length; j++)
-                {
-                    NetworkObject component = __instance.allPlayerObjects[j].GetComponent<NetworkObject>();
-                    if (!component.IsOwnedByServer)
-                    {
-                        list2.Add(component.OwnerClientId);
-                    }
-                    else if (j == 0)
-                    {
-                        list2.Add(NetworkManager.Singleton.LocalClientId);
-                    }
-                    else
-                    {
-                        list2.Add(999UL);
-                    }
-                }
+			    __instance.allPlayerScripts[num].actualClientId = clientId;
+			    __instance.allPlayerObjects[num].GetComponent<NetworkObject>().ChangeOwnership(clientId);
+			    Debug.Log(string.Format("New player assigned object id: {0}", __instance.allPlayerObjects[num]));
+			    List<ulong> list2 = new List<ulong>();
+			    for (int j = 0; j < __instance.allPlayerObjects.Length; j++)
+			    {
+				    NetworkObject component = __instance.allPlayerObjects[j].GetComponent<NetworkObject>();
+				    if (!component.IsOwnedByServer)
+				    {
+					    list2.Add(component.OwnerClientId);
+				    }
+				    else if (j == 0)
+				    {
+					    list2.Add(NetworkManager.Singleton.LocalClientId);
+				    }
+				    else
+				    {
+					    list2.Add(999UL);
+				    }
+			    }
 
-                int groupCredits = Object.FindObjectOfType<Terminal>().groupCredits;
-                int profitQuota = TimeOfDay.Instance.profitQuota;
-                int quotaFulfilled = TimeOfDay.Instance.quotaFulfilled;
-                int num2 = (int)TimeOfDay.Instance.timeUntilDeadline;
-                ReflectionUtils.InvokeMethod(__instance, "OnPlayerConnectedClientRpc", new object[]
-                {
-                    clientId, __instance.connectedPlayersAmount, list2.ToArray(), num,
-                    groupCredits,
-                    __instance.currentLevelID, profitQuota, num2, quotaFulfilled, __instance.randomMapSeed
-                });
-                __instance.ClientPlayerList.Add(clientId, num);
-                Debug.Log(string.Format("client id connecting: {0} ; their corresponding player object id: {1}",
-                    clientId,
-                    num));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(string.Format(
-                    "Error occured in OnClientConnected! Shutting server down. clientId: {0}. Error: {1}", clientId,
-                    ex));
-                GameNetworkManager.Instance.disconnectionReasonMessage =
-                    "Error occured when a player attempted to join the server! Restart the application and please report the glitch!";
-                GameNetworkManager.Instance.Disconnect();
-            }
+			    int groupCredits = Object.FindObjectOfType<Terminal>().groupCredits;
+			    int profitQuota = TimeOfDay.Instance.profitQuota;
+			    int quotaFulfilled = TimeOfDay.Instance.quotaFulfilled;
+			    int num2 = (int)TimeOfDay.Instance.timeUntilDeadline;
 
-            return false;
-        }
+			    ReflectionUtils.InvokeMethod(__instance, "OnPlayerConnectedClientRpc", new object[]
+			    {
+				    clientId, __instance.connectedPlayersAmount, list2.ToArray(), num,
+				    groupCredits, __instance.currentLevelID, profitQuota, num2, quotaFulfilled,
+				    __instance.randomMapSeed, 
+				    __instance.isChallengeFile
+			    });
+			    __instance.ClientPlayerList.Add(clientId, num);
+			    Debug.Log(string.Format("client id connecting: {0} ; their corresponding player object id: {1}",
+				    clientId, num));
+		    }
+		    catch (Exception ex)
+		    {
+			    Debug.LogError(string.Format(
+				    "Error occured in OnClientConnected! Shutting server down. clientId: {0}. Error: {1}", clientId,
+				    ex));
+			    GameNetworkManager.Instance.disconnectionReasonMessage =
+				    "Error occured when a player attempted to join the server! Restart the application and please report the glitch!";
+			    GameNetworkManager.Instance.Disconnect();
+		    }
+
+		    return false;
+	    }
     }
 }

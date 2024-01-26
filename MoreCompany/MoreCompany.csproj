@@ -439,29 +439,7 @@
       <HintPath>managed\UnityEngine.XRModule.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AudioMixerPatches.cs" />
-    <Compile Include="Behaviors\SpinDragger.cs" />
-    <Compile Include="ChatPatches.cs" />
-    <Compile Include="Cosmetics\CosmeticApplication.cs" />
-    <Compile Include="Cosmetics\CosmeticInstance.cs" />
-    <Compile Include="Cosmetics\CosmeticRegistry.cs" />
-    <Compile Include="DebugCommandRegistry.cs" />
-    <Compile Include="EnemyAIPatches.cs" />
-    <Compile Include="HudPatches.cs" />
-    <Compile Include="MainClass.cs" />
-    <Compile Include="ManualHarmonyPatches.cs" />
-    <Compile Include="MimicPatches.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReflectionUtils.cs" />
-    <Compile Include="ShipTeleporterPatches.cs" />
-    <Compile Include="SpectatePatches.cs" />
-    <Compile Include="StartPatches.cs" />
-    <Compile Include="TerminalStartDebugPatches.cs" />
-    <Compile Include="Utils\AssemblyChecker.cs" />
-    <Compile Include="Utils\BundleUtilities.cs" />
-    <Compile Include="VersionPatches.cs" />
-  </ItemGroup>
+  
   <ItemGroup>
     <EmbeddedResource Include="Resources\morecompany.assets" />
   </ItemGroup>

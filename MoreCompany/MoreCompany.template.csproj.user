@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+    <PropertyGroup>
+        <LethalCompanyDir>C:/Program Files (x86)/Steam/steamapps/common/Lethal Company/</LethalCompanyDir>
+        <TestProfileDir>$(AppData)/r2modmanPlus-local/LethalCompany/profiles/Test MoreCompany/</TestProfileDir>
+    </PropertyGroup>
+
+    <!-- Enable by removing 'Condition="false"' -->
+    <Target Name="CopyToTestProfile" AfterTargets="PostBuildEvent" Condition="false">
+        <PropertyGroup>
+            <TestProfilePluginDir>$(TestProfileDir)BepInEx/plugins/notnotnotswipez-MoreCompany/</TestProfilePluginDir>
+        </PropertyGroup>
+        <MakeDir Directories="$(TestProfilePluginDir)" Condition="!Exists('$(TestProfilePluginDir)')"/>
+        <ItemGroup>
+            <TestProfileStageFiles Include="$(TargetPath)" DestinationFolder="$(TestProfilePluginDir)"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(TestProfileStageFiles->'%(Identity)')" DestinationFolder="%(DestinationFolder)" />
+    </Target>
+</Project>

@@ -1,15 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compiler switches -->
   <PropertyGroup>
-    <ProjectGuid>{511A1E5E-0611-49F1-B60F-CEC69C668FD8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>MoreCompany</RootNamespace>
-    <Copyright>Copyright © NotNotSwipez 2023</Copyright>
-    <AssemblyName>MoreCompany</AssemblyName>
-    <Product>MoreCompany</Product>
     <TargetFramework>net472</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  
+  <!-- Project metadata -->
+  <PropertyGroup>
+    <ProjectGuid>{511A1E5E-0611-49F1-B60F-CEC69C668FD8}</ProjectGuid>
+    <AssemblyName>MoreCompany</AssemblyName>
+    <Product>MoreCompany</Product>
+    <Copyright>Copyright © NotNotSwipez 2023</Copyright>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

@@ -3,6 +3,7 @@
   <!-- Compiler switches -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <LangVersion>latest</LangVersion>
     <RootNamespace>MoreCompany</RootNamespace>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -14,7 +15,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  
+
   <!-- Project metadata -->
   <PropertyGroup>
     <ProjectGuid>{0E6ED956-F9BA-45B5-9149-A17D23EC42D2}</ProjectGuid>
@@ -22,13 +23,13 @@
     <Product>MoreCompany</Product>
     <Copyright>Copyright © NotNotSwipez 2023</Copyright>
   </PropertyGroup>
-  
+
   <!-- Embedded resources -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\morecompany.assets" />
     <EmbeddedResource Include="Resources\morecompany.cosmetics" />
   </ItemGroup>
-  
+
   <!-- Configuration-specific properties -->
   <PropertyGroup Condition="$(Configuration) == 'Debug'">
     <Optimize>false</Optimize>
@@ -37,18 +38,18 @@
   <PropertyGroup Condition="$(Configuration) == 'Release'">
     <Optimize>true</Optimize>
   </PropertyGroup>
-  
+
   <!-- Development dependencies (set 'PrivateAsssets="all"') -->
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all"/>
   </ItemGroup>
-  
+
   <!-- Runtime dependencies (common) -->
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" />
   </ItemGroup>
-  
+
   <!-- Runtime dependencies (local) -->
   <ItemGroup Condition="$(CI) != 'true'">
     <Reference Include="Assembly-CSharp">
@@ -73,7 +74,7 @@
       <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
-  
+
   <!-- Runtime dependencies (CI) -->
   <ItemGroup Condition="$(CI) == 'true'">
     <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />

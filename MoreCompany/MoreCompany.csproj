@@ -5,6 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>MoreCompany</RootNamespace>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <DebugSymbols>true</DebugSymbols>

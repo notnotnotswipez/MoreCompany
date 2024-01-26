@@ -9,6 +9,7 @@
     <Deterministic>true</Deterministic>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
   </PropertyGroup>
   
   <!-- Project metadata -->
@@ -22,13 +23,12 @@
   <!-- Configuration-specific properties -->
   <PropertyGroup Condition="$(Configuration) == 'Debug'">
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="$(Configuration) == 'Release'">
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>

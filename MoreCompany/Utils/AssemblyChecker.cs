@@ -1,24 +1,22 @@
 using System;
 using System.Reflection;
-using BepInEx.Logging;
 
-namespace MoreCompany.Utils
+namespace MoreCompany.Utils;
+
+public class AssemblyChecker
 {
-    public class AssemblyChecker
+    public static bool HasAssemblyLoaded(string name)
     {
-        public static bool HasAssemblyLoaded(string name)
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+        foreach (var asm in assemblies)
         {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            foreach (var asm in assemblies)
+            if (asm.GetName().Name.ToLower().Equals(name))
             {
-                if (asm.GetName().Name.ToLower().Equals(name))
-                {
-                    return true;
-                }
+                return true;
             }
-
-            return false;
         }
+
+        return false;
     }
 }

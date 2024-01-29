@@ -37,6 +37,7 @@
 /MoreCompany/[Bb]in
 /MoreCompany/[Oo]bj
 /MoreCompany/[Dd]ist
+/MoreCompany/managed
 
 # Explicit exceptions/ignores
 **.user

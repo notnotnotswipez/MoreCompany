@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 using BepInEx;
 using BepInEx.Logging;
 using GameNetcodeStuff;
@@ -27,6 +28,7 @@ namespace MoreCompany
     public class MainClass : BaseUnityPlugin
     {
         public static int newPlayerCount = 32;
+        public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
         public static bool showCosmetics = true;
         
@@ -50,7 +52,6 @@ namespace MoreCompany
         
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
         
-
         private void Awake()
         {
             StaticLogger = Logger;
@@ -66,9 +67,18 @@ namespace MoreCompany
             }
 
             StaticLogger.LogInfo("Loading MoreCompany...");
-            
-            StaticLogger.LogInfo("Checking: "+dynamicCosmeticsPath);
-            
+
+            SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+
+            SteamMatchmaking.OnLobbyEntered += (lobby) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+
+            StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))
             {
                 StaticLogger.LogInfo("Creating cosmetics directory");
@@ -83,17 +93,7 @@ namespace MoreCompany
             AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
             CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
             cosmeticsBundle.Unload(false);
-            
-            SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
-            {
-                newPlayerCount = lobby.MaxMembers;
-            };
-            
-            SteamMatchmaking.OnLobbyEntered += (lobby) =>
-            {
-                newPlayerCount = lobby.MaxMembers;
-            };
-            
+
             StaticLogger.LogInfo("Loading USER COSMETICS...");
             RecursiveCosmeticLoad(Paths.PluginPath);
 
@@ -157,7 +157,7 @@ namespace MoreCompany
                 string[] lines = System.IO.File.ReadAllLines(moreCompanySave);
                 try
                 {
-                    newPlayerCount = int.Parse(lines[0]);
+                    newPlayerCount = Mathf.Clamp(int.Parse(lines[0]), minPlayerCount, maxPlayerCount);
                     showCosmetics = bool.Parse(lines[1]);
                 }
                 catch (Exception e)
@@ -186,28 +186,28 @@ namespace MoreCompany
         public static void ResizePlayerCache(Dictionary<uint, Dictionary<int, NetworkObject>> ScenePlacedObjects)
         {
             StartOfRound round = StartOfRound.Instance;
-            if (round.allPlayerObjects.Length != MainClass.newPlayerCount)
+            if (round.allPlayerObjects.Length != newPlayerCount)
             {
+                StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
                 playerIdsAndCosmetics.Clear();
                 uint starting = 10000;
 
                 int originalLength = round.allPlayerObjects.Length;
 
-                int amountToCreate = MainClass.newPlayerCount < 4 ? 4 : MainClass.newPlayerCount;
-                int difference = amountToCreate - originalLength;
+                int difference = newPlayerCount - originalLength;
 
-                Array.Resize(ref round.allPlayerObjects, amountToCreate);
-                Array.Resize(ref round.allPlayerScripts, amountToCreate);
-                Array.Resize(ref round.gameStats.allPlayerStats, amountToCreate);
-                Array.Resize(ref round.playerSpawnPositions, amountToCreate);
+                Array.Resize(ref round.allPlayerObjects, newPlayerCount);
+                Array.Resize(ref round.allPlayerScripts, newPlayerCount);
+                Array.Resize(ref round.gameStats.allPlayerStats, newPlayerCount);
+                Array.Resize(ref round.playerSpawnPositions, newPlayerCount);
 
-                MainClass.StaticLogger.LogInfo($"Resizing player cache from {originalLength} to {amountToCreate} with difference of {difference}");
+                StaticLogger.LogInfo($"Resizing player cache from {originalLength} to {newPlayerCount} with difference of {difference}");
 
                 if (difference > 0)
                 {
                     //GameObject playerPrefab = round.playerPrefab;
                     //GameObject firstPlayerObject = round.allPlayerObjects[0];
-                    GameObject firstPlayerObject = round.allPlayerObjects[amountToCreate < 4 ? 0 : 3];
+                    GameObject firstPlayerObject = round.allPlayerObjects[3];
                     for (int i = 0; i < difference; i++)
                     {
                         uint newId = starting + (uint)i;
@@ -236,8 +236,8 @@ namespace MoreCompany
                         notSupposedToExistPlayers.Add(newPlayerScript);
 
                         // Reset
-                        newPlayerScript.playerUsername = $"Player #{4 + i}";
                         newPlayerScript.playerClientId = (ulong)(4 + i);
+                        newPlayerScript.playerUsername = $"Player #{newPlayerScript.playerClientId}";
                         newPlayerScript.isPlayerControlled = false;
                         newPlayerScript.isPlayerDead = false;
 
@@ -252,6 +252,11 @@ namespace MoreCompany
                         round.playerSpawnPositions[originalLength + i] = round.playerSpawnPositions[3];
                     }
                 }
+            }
+
+            foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
+            {
+                newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
             }
         }
     }
@@ -469,10 +474,20 @@ namespace MoreCompany
         }
     }
 
+    [HarmonyPatch(typeof(SteamMatchmaking), "CreateLobbyAsync")]
+    public static class LobbyThingPatch
+    {
+        public static void Prefix(ref int maxMembers)
+        {
+            MainClass.ReadSettingsFromFile();
+            maxMembers = MainClass.newPlayerCount;
+        }
+    }
+
     [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
     public static class ConnectionApproval
     {
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
             bool foundCount = false;
@@ -501,15 +516,20 @@ namespace MoreCompany
 
             return newInstructions.AsEnumerable();
         }
-    }
 
-    [HarmonyPatch(typeof(SteamMatchmaking), "CreateLobbyAsync")]
-    public static class LobbyThingPatch
-    {
-        public static void Prefix(ref int maxMembers)
+        private static void Postfix(ref GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
         {
-            MainClass.ReadSettingsFromFile();
-            maxMembers = MainClass.newPlayerCount;
+            // LAN Crew Size Mismatch
+            if (response.Approved && __instance.disableSteam)
+            {
+                string @string = Encoding.ASCII.GetString(request.Payload);
+                string[] array = @string.Split(",");
+                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.newPlayerCount.ToString()))
+                {
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {array[1]}";
+                    response.Approved = false;
+                }
+            }
         }
     }
 }

@@ -36,8 +36,10 @@ namespace MoreCompany
 
 	[HarmonyPatch(typeof(MenuManager), "Awake")]
 	public static class MenuManagerLogoOverridePatch
-	{
-		public static void Postfix(MenuManager __instance)
+    {
+        public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
+
+        public static void Postfix(MenuManager __instance)
 		{
 			try
             {
@@ -62,39 +64,55 @@ namespace MoreCompany
 
                 CosmeticRegistry.SpawnCosmeticGUI();
 
-                // Create the crew text display
+                // Add the crew count input
+                LANMenu.InitializeMenu();
+                inputFields.Clear();
                 Transform lobbyHostOptions = parent.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
-
-				GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
-				RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
-				rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
-			
-				TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
-				inputField.characterLimit = 3;
-				inputField.text = MainClass.newPlayerCount.ToString();
-				inputField.onValueChanged.AddListener(s =>
-				{
-					if (int.TryParse(s, out int result))
-					{
-						MainClass.newPlayerCount = Mathf.Clamp(result, 1, MainClass.maxPlayerCount);
-                        inputField.text = MainClass.newPlayerCount.ToString();
-						MainClass.SaveSettingsToFile();
-					}
-					else 
-					{
-						if (s.Length != 0)
-						{
-							inputField.text = MainClass.newPlayerCount.ToString();
-							inputField.caretPosition = 1;
-						}
-					}
-				});
+                if (lobbyHostOptions != null)
+                    CreateCrewCountInput(lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
+                Transform lobbyJoinOptions = parent.transform.Find("MenuContainer/LobbyJoinSettings/JoinSettingsContainer/LobbyJoinOptions");
+                if (lobbyJoinOptions != null)
+                    CreateCrewCountInput(lobbyJoinOptions.Find("LANOptions"));
             }
 			catch (Exception e)
 			{
-				// Ignore
+                MainClass.StaticLogger.LogError(e);
 			}
-		}
+        }
+
+        private static void CreateCrewCountInput(Transform parent)
+        {
+            GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
+            RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
+            rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
+
+            TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
+            inputField.characterLimit = 3;
+            inputField.text = MainClass.newPlayerCount.ToString();
+            inputFields.Add(inputField);
+            inputField.onValueChanged.AddListener(s =>
+            {
+                if (inputField.text == MainClass.newPlayerCount.ToString())
+                    return;
+
+                if (int.TryParse(s, out int result))
+                {
+                    MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                    foreach(TMP_InputField field in inputFields)
+                        field.text = MainClass.newPlayerCount.ToString();
+                    MainClass.SaveSettingsToFile();
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+                }
+                else if (s.Length != 0)
+                {
+                    foreach (TMP_InputField field in inputFields)
+                    {
+                        field.text = MainClass.newPlayerCount.ToString();
+                        field.caretPosition = 1;
+                    }
+                }
+            });
+        }
 	}
 	
 	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
@@ -238,7 +256,7 @@ namespace MoreCompany
                         }
                     });
 
-                    if (StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
+                    if (StartOfRound.Instance.localPlayerController != null && StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
                     {
                         playerVolume.gameObject.SetActive(false);
                         spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);

@@ -150,17 +150,17 @@ namespace MoreCompany
 
                 GameObject.Find("MenuManager").GetComponent<MenuManager>().menuNotification.SetActive(false);
 
-                //// Automatic Reconnect
-                //Object.FindObjectOfType<MenuManager>().SetLoadingScreen(isLoading: true);
-                //__instance.StartCoroutine(delayedReconnect());
+                // Automatic Reconnect
+                Object.FindObjectOfType<MenuManager>().SetLoadingScreen(isLoading: true);
+                __instance.StartCoroutine(delayedReconnect());
 
-                // Manual Reconnect
-                foreach (TMP_InputField field in MenuManagerLogoOverridePatch.inputFields)
-                    field.text = MainClass.newPlayerCount.ToString();
-                TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                if (footerText != null)
-                    footerText.text = $"The crew size was mismatched and has automatically been changed to {crewSizeMismatch}. Please re-attempt the connection.";
-                GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
+                //// Manual Reconnect
+                //foreach (TMP_InputField field in MenuManagerLogoOverridePatch.inputFields)
+                //    field.text = MainClass.newPlayerCount.ToString();
+                //TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
+                //if (footerText != null)
+                //    footerText.text = $"The crew size was mismatched and has automatically been changed to {crewSizeMismatch}. Please re-attempt the connection.";
+                //GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
 
                 crewSizeMismatch = 0;
             }

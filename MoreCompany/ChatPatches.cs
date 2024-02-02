@@ -94,7 +94,7 @@ namespace MoreCompany
     {
         public static bool ignoreSample = false;
         
-        public static bool Prefix(HUDManager __instance, ref string chatMessage, int playerId)
+        public static bool Prefix(ref HUDManager __instance, ref string chatMessage, int playerId)
         {
             NetworkManager networkManager = __instance.NetworkManager;
             if (networkManager == null || !networkManager.IsListening)
@@ -107,7 +107,7 @@ namespace MoreCompany
                 if (chatMessage.StartsWith("[replacewithdata]"))
                 {
                     chatMessage = ServerReceiveMessagePatch.previousDataMessage;
-                    HandleDataMessage(chatMessage);
+                    HandleDataMessage(ref chatMessage);
                 }
                 else if (chatMessage.StartsWith("[morecompanycosmetics]"))
                 {
@@ -119,14 +119,14 @@ namespace MoreCompany
             {
                 if (chatMessage.StartsWith("[morecompanycosmetics]"))
                 {
-                    HandleDataMessage(chatMessage);
+                    HandleDataMessage(ref chatMessage);
                 }
             }
 
             return true;
         }
         
-        private static void HandleDataMessage(string chatMessage)
+        private static void HandleDataMessage(ref string chatMessage)
         {
             if (ignoreSample)
             {

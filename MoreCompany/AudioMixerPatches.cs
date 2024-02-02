@@ -14,24 +14,25 @@ namespace MoreCompany
             {
                 string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");
                 int playerObjectNumber = int.Parse(cutName);
-                
-            
 
                 PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerObjectNumber];
-                AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
-                if (playerControllerB != null && voiceSource)
+                if (playerControllerB != null)
                 {
-                    if (name.StartsWith("PlayerVolume"))
+                    AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
+                    if (voiceSource)
                     {
-                        voiceSource.volume = value/16;
+                        if (name.StartsWith("PlayerVolume"))
+                        {
+                            voiceSource.volume = value / 16;
+                        }
+                        else if (name.StartsWith("PlayerPitch"))
+                        {
+                            voiceSource.pitch = value;
+                        }
                     }
-                    else if (name.StartsWith("PlayerPitch"))
-                    {
-                        voiceSource.pitch = value;
-                    }
+
+                    return false;
                 }
-             
-                return false;
             }
 
             return true;

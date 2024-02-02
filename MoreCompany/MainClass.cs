@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
 using BepInEx;
 using BepInEx.Logging;
 using GameNetcodeStuff;
@@ -11,12 +12,8 @@ using HarmonyLib;
 using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
-using Steamworks.Data;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Audio;
-using Logger = BepInEx.Logging.Logger;
-using Object = UnityEngine.Object;
 
 namespace MoreCompany
 {
@@ -31,6 +28,7 @@ namespace MoreCompany
     public class MainClass : BaseUnityPlugin
     {
         public static int newPlayerCount = 32;
+        public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
         public static bool showCosmetics = true;
         
@@ -54,7 +52,6 @@ namespace MoreCompany
         
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
         
-
         private void Awake()
         {
             StaticLogger = Logger;
@@ -68,13 +65,20 @@ namespace MoreCompany
             {
                 StaticLogger.LogError("Failed to patch: " + e);
             }
-            
-            ManualHarmonyPatches.ManualPatch(harmony);
 
             StaticLogger.LogInfo("Loading MoreCompany...");
-            
-            StaticLogger.LogInfo("Checking: "+dynamicCosmeticsPath);
-            
+
+            SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+
+            SteamMatchmaking.OnLobbyEntered += (lobby) =>
+            {
+                newPlayerCount = lobby.MaxMembers;
+            };
+
+            StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))
             {
                 StaticLogger.LogInfo("Creating cosmetics directory");
@@ -89,17 +93,7 @@ namespace MoreCompany
             AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
             CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
             cosmeticsBundle.Unload(false);
-            
-            SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
-            {
-                newPlayerCount = lobby.MaxMembers;
-            };
-            
-            SteamMatchmaking.OnLobbyEntered += (lobby) =>
-            {
-                newPlayerCount = lobby.MaxMembers;
-            };
-            
+
             StaticLogger.LogInfo("Loading USER COSMETICS...");
             RecursiveCosmeticLoad(Paths.PluginPath);
 
@@ -163,7 +157,7 @@ namespace MoreCompany
                 string[] lines = System.IO.File.ReadAllLines(moreCompanySave);
                 try
                 {
-                    newPlayerCount = int.Parse(lines[0]);
+                    newPlayerCount = Mathf.Clamp(int.Parse(lines[0]), minPlayerCount, maxPlayerCount);
                     showCosmetics = bool.Parse(lines[1]);
                 }
                 catch (Exception e)
@@ -189,109 +183,125 @@ namespace MoreCompany
             }
         }
 
-
         public static void ResizePlayerCache(Dictionary<uint, Dictionary<int, NetworkObject>> ScenePlacedObjects)
         {
             StartOfRound round = StartOfRound.Instance;
-            if (round.allPlayerObjects.Length != MainClass.newPlayerCount)
+            if (round.allPlayerObjects.Length != newPlayerCount)
             {
+                StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
                 playerIdsAndCosmetics.Clear();
                 uint starting = 10000;
 
-                int difference = MainClass.newPlayerCount - round.allPlayerObjects.Length;
                 int originalLength = round.allPlayerObjects.Length;
-                GameObject firstPlayerObject = round.allPlayerObjects[3];
-                
-                for (int i = 0; i < difference; i++){
-                    uint newId = starting + (uint) i;
-                    GameObject copy = GameObject.Instantiate(firstPlayerObject);
-                    NetworkObject copyNetworkObject = copy.GetComponent<NetworkObject>();
-                    ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", (uint) newId);
-                    int handle = copyNetworkObject.gameObject.scene.handle;
-                    uint globalObjectIdHash = newId;
-                    
-                    if (!ScenePlacedObjects.ContainsKey(globalObjectIdHash))
+
+                int difference = newPlayerCount - originalLength;
+
+                Array.Resize(ref round.allPlayerObjects, newPlayerCount);
+                Array.Resize(ref round.allPlayerScripts, newPlayerCount);
+                Array.Resize(ref round.gameStats.allPlayerStats, newPlayerCount);
+                Array.Resize(ref round.playerSpawnPositions, newPlayerCount);
+
+                StaticLogger.LogInfo($"Resizing player cache from {originalLength} to {newPlayerCount} with difference of {difference}");
+
+                if (difference > 0)
+                {
+                    //GameObject playerPrefab = round.playerPrefab;
+                    //GameObject firstPlayerObject = round.allPlayerObjects[0];
+                    GameObject firstPlayerObject = round.allPlayerObjects[3];
+                    for (int i = 0; i < difference; i++)
                     {
-                        ScenePlacedObjects.Add(globalObjectIdHash, new Dictionary<int, NetworkObject>());
+                        uint newId = starting + (uint)i;
+                        //GameObject copy = GameObject.Instantiate(playerPrefab, firstPlayerObject.transform.parent);
+                        GameObject copy = GameObject.Instantiate(firstPlayerObject, firstPlayerObject.transform.parent);
+                        NetworkObject copyNetworkObject = copy.GetComponent<NetworkObject>();
+                        ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", (uint) newId);
+                        int handle = copyNetworkObject.gameObject.scene.handle;
+                        uint globalObjectIdHash = newId;
+
+                        if (!ScenePlacedObjects.ContainsKey(globalObjectIdHash))
+                        {
+                            ScenePlacedObjects.Add(globalObjectIdHash, new Dictionary<int, NetworkObject>());
+                        }
+                        if (ScenePlacedObjects[globalObjectIdHash].ContainsKey(handle))
+                        {
+                            string text = ((ScenePlacedObjects[globalObjectIdHash][handle] != null) ? ScenePlacedObjects[globalObjectIdHash][handle].name : "Null Entry");
+                            throw new Exception(copyNetworkObject.name + " tried to registered with ScenePlacedObjects which already contains " + string.Format("the same {0} value {1} for {2}!", "GlobalObjectIdHash", globalObjectIdHash, text));
+                        }
+                        ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
+
+                        copy.name = $"Player ({4 + i})";
+
+                        PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
+
+                        notSupposedToExistPlayers.Add(newPlayerScript);
+
+                        // Reset
+                        newPlayerScript.playerClientId = (ulong)(4 + i);
+                        newPlayerScript.playerUsername = $"Player #{newPlayerScript.playerClientId}";
+                        newPlayerScript.isPlayerControlled = false;
+                        newPlayerScript.isPlayerDead = false;
+
+                        newPlayerScript.DropAllHeldItems(false, false);
+                        newPlayerScript.TeleportPlayer(round.notSpawnedPosition.position, false, 0f, false, true);
+                        UnlockableSuit.SwitchSuitForPlayer(newPlayerScript, 0, false);
+
+                        // Set new player object
+                        round.allPlayerObjects[originalLength + i] = copy;
+                        round.gameStats.allPlayerStats[originalLength + i] = new PlayerStats();
+                        round.allPlayerScripts[originalLength + i] = newPlayerScript;
+                        round.playerSpawnPositions[originalLength + i] = round.playerSpawnPositions[3];
                     }
-                    if (ScenePlacedObjects[globalObjectIdHash].ContainsKey(handle))
-                    {
-                        string text = ((ScenePlacedObjects[globalObjectIdHash][handle] != null) ? ScenePlacedObjects[globalObjectIdHash][handle].name : "Null Entry");
-                        throw new Exception(copyNetworkObject.name + " tried to registered with ScenePlacedObjects which already contains " + string.Format("the same {0} value {1} for {2}!", "GlobalObjectIdHash", globalObjectIdHash, text));
-                    }
-                    ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
-
-                    copy.name = $"Player ({(4+i)})";
-
-                    copy.transform.parent = null;
-
-                    PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
-                    
-
-                    notSupposedToExistPlayers.Add(newPlayerScript);
-                    
-                    // Reset
-                    newPlayerScript.playerClientId = (ulong)(4+i);
-                    newPlayerScript.isPlayerControlled = false;
-                    newPlayerScript.isPlayerDead = false;
-                    
-                    newPlayerScript.DropAllHeldItems(false, false);
-                    newPlayerScript.TeleportPlayer(round.notSpawnedPosition.position, false, 0f, false, true);
-                    UnlockableSuit.SwitchSuitForPlayer(newPlayerScript, 0, false);
-
-                    // Resize arrays
-                    Array.Resize(ref round.allPlayerObjects, round.allPlayerObjects.Length + 1);
-                    Array.Resize(ref round.allPlayerScripts, round.allPlayerScripts.Length + 1);
-                    Array.Resize(ref round.gameStats.allPlayerStats, round.gameStats.allPlayerStats.Length + 1);
-                    Array.Resize(ref round.playerSpawnPositions, round.playerSpawnPositions.Length + 1);
-                    
-                    // Set new player object
-                    round.allPlayerObjects[originalLength + i] = copy;
-                    round.gameStats.allPlayerStats[originalLength + i] = new PlayerStats();
-                    round.allPlayerScripts[originalLength + i] = newPlayerScript;
-                    round.playerSpawnPositions[originalLength + i] = round.playerSpawnPositions[3];
-                    
                 }
+            }
+
+            foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
+            {
+                newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
             }
         }
+    }
 
-        public static void EnablePlayerObjectsBasedOnConnected()
+    [HarmonyPatch(typeof(PlayerControllerB), "Start")]
+    public static class PlayerControllerBStartPatch
+    {
+        public static void Postfix(ref PlayerControllerB __instance)
         {
-            int connectedPlayers = StartOfRound.Instance.connectedPlayersAmount;
-            foreach (var playerScript in StartOfRound.Instance.allPlayerScripts)
-            {
-                for (int j = 0; j < connectedPlayers + 1; j++)
-                {
-                    if (!playerScript.isPlayerControlled)
-                    {
-                        playerScript.gameObject.SetActive(false);
-                    }
-                    else
-                    {
-                        playerScript.gameObject.SetActive(true);
-                    }
-                }
-            }
+            Collider[] nearByPlayers = new Collider[MainClass.newPlayerCount];
+            ReflectionUtils.SetFieldValue(__instance, "nearByPlayers", nearByPlayers);
         }
     }
 
     [HarmonyPatch(typeof(PlayerControllerB), "SendNewPlayerValuesServerRpc")]
     public static class SendNewPlayerValuesServerRpcPatch
     {
-        public static ulong lastId = 0;
-        
-        public static void Prefix(PlayerControllerB __instance, ulong newPlayerSteamId)
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            NetworkManager networkManager = __instance.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
+            var newInstructions = new List<CodeInstruction>();
+            bool foundCount = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
             {
-                return;
+                if (!alreadyReplaced)
+                {
+                    if (!foundCount && instruction.ToString() == "callvirt virtual void System.Collections.Generic.List<ulong>::Add(ulong item)")
+                    {
+                        foundCount = true;
+                    }
+                    else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                        continue;
+                    }
+                }
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
-            if (networkManager.IsServer)
-            {
-                lastId = newPlayerSteamId;
-            }
+            return newInstructions.AsEnumerable();
         }
     }
     
@@ -306,7 +316,7 @@ namespace MoreCompany
                 return;
             }
             
-            if (StartOfRound.Instance.mapScreen.radarTargets.Count != MainClass.newPlayerCount)
+            if (StartOfRound.Instance.mapScreen.radarTargets.Count != StartOfRound.Instance.allPlayerScripts.Length)
             {
                 List<PlayerControllerB> useless = new List<PlayerControllerB>();
                 foreach (var notSupposedToBeHerePlayer in MainClass.notSupposedToExistPlayers)
@@ -323,56 +333,101 @@ namespace MoreCompany
 
                 MainClass.notSupposedToExistPlayers.RemoveAll(x => useless.Contains(x));
             }
-
-            if (networkManager.IsServer)
-            {
-                List<ulong> list = new List<ulong>();
-                for (int i = 0; i < MainClass.newPlayerCount; i++)
-                {
-                    if (i == (int)__instance.playerClientId)
-                    {
-                        list.Add(SendNewPlayerValuesServerRpcPatch.lastId);
-                    }
-                    else
-                    {
-                        list.Add(__instance.playersManager.allPlayerScripts[i].playerSteamId);
-                    }
-                }
-                playerSteamIds = list.ToArray();
-            }
         }
     }
 
-    
-    public static class HUDManagerBullshitPatch
+    [HarmonyPatch(typeof(HUDManager), "SyncAllPlayerLevelsServerRpc", new Type[] {})]
+    public static class SyncAllPlayerLevelsPatch
     {
-        public static bool ManualPrefix(HUDManager __instance)
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            return false;
+            var newInstructions = new List<CodeInstruction>();
+            foreach (var instruction in instructions)
+            {
+                if (instruction.ToString() == "ldc.i4.4 NULL")
+                {
+                    CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                    newInstructions.Add(codeInstruction);
+                    //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                    continue;
+                }
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
+            }
+
+            return newInstructions.AsEnumerable();
         }
     }
     
-    [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesClientRpc")]
-    public static class SyncShipUnlockablePatch
+    [HarmonyPatch]
+    public static class SyncShipUnlockablesPatch
     {
-        public static void Prefix(StartOfRound __instance, ref int[] playerSuitIDs, bool shipLightsOn, Vector3[] placeableObjectPositions, Vector3[] placeableObjectRotations, int[] placeableObjects, int[] storedItems, int[] scrapValues, int[] itemSaveData)
+        [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesServerRpc")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> ServerTranspiler(IEnumerable<CodeInstruction> instructions)
         {
-            NetworkManager networkManager = __instance.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
+            var newInstructions = new List<CodeInstruction>();
+            bool foundCount = false;
+            int alreadyReplaced = 0;
+            foreach (var instruction in instructions)
             {
-                return;
+                if (alreadyReplaced != 2)
+                {
+                    if (!foundCount && instruction.ToString() == "callvirt bool Unity.Netcode.NetworkManager::get_IsHost()")
+                    {
+                        foundCount = true;
+                    }
+                    else if (instruction.ToString().StartsWith("ldc.i4.4 NULL"))
+                    {
+                        alreadyReplaced++;
+                        CodeInstruction codeInstruction = new CodeInstruction(instruction);
+                        codeInstruction.opcode = OpCodes.Ldsfld;
+                        codeInstruction.operand = AccessTools.Field(typeof(MainClass), "newPlayerCount");
+                        //CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                        continue;
+                    }
+                }
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
-            if (networkManager.IsServer)
+            return newInstructions.AsEnumerable();
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesClientRpc")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> ClientTranspiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            bool foundCount = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
             {
-                int[] array = new int[MainClass.newPlayerCount];
-                for (int i = 0; i < MainClass.newPlayerCount; i++)
+                if (!alreadyReplaced)
                 {
-                    array[i] = __instance.allPlayerScripts[i].currentSuitID;
+                    if (!foundCount && instruction.ToString() == "callvirt void UnityEngine.Renderer::set_sharedMaterial(UnityEngine.Material value)")
+                    {
+                        foundCount = true;
+                    }
+                    else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                        continue;
+                    }
                 }
-                
-                playerSuitIDs = array;
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
+
+            return newInstructions.AsEnumerable();
         }
     }
     
@@ -388,30 +443,34 @@ namespace MoreCompany
     [HarmonyPatch(typeof(GameNetworkManager), "LobbyDataIsJoinable")]
     public static class LobbyDataJoinablePatch
     {
-        public static bool Prefix(ref bool __result)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            __result = true;
-            return false;
-        }
-    }
-    
-    [HarmonyPatch(typeof(NetworkConnectionManager), "HandleConnectionApproval")]
-    public static class ConnectionApprovalTest
-    {
-        public static void Prefix(ulong ownerClientId, NetworkManager.ConnectionApprovalResponse response)
-        {
-            if (StartOfRound.Instance)
+            var newInstructions = new List<CodeInstruction>();
+            bool foundCount = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
             {
-                if (StartOfRound.Instance.connectedPlayersAmount >= MainClass.newPlayerCount)
+                if (!alreadyReplaced)
                 {
-                    response.Approved = false;
-                    response.Reason = "Server is full";
+                    if (!foundCount && instruction.ToString() == "call int Steamworks.Data.Lobby::get_MemberCount()")
+                    {
+                        foundCount = true;
+                    }
+                    else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "maxPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                        continue;
+                    }
                 }
-                else
-                {
-                    response.Approved = true;
-                }
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
+
+            return newInstructions.AsEnumerable();
         }
     }
 
@@ -422,6 +481,55 @@ namespace MoreCompany
         {
             MainClass.ReadSettingsFromFile();
             maxMembers = MainClass.newPlayerCount;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
+    public static class ConnectionApproval
+    {
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            bool foundCount = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
+            {
+                if (!alreadyReplaced)
+                {
+                    if (!foundCount && instruction.ToString() == "ldfld int GameNetworkManager::connectedPlayers")
+                    {
+                        foundCount = true;
+                    }
+                    else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
+                        continue;
+                    }
+                }
+
+                newInstructions.Add(instruction);
+                //MainClass.StaticLogger.LogInfo(instruction.ToString());
+            }
+
+            return newInstructions.AsEnumerable();
+        }
+
+        private static void Postfix(ref GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
+        {
+            // LAN Crew Size Mismatch
+            if (response.Approved && __instance.disableSteam)
+            {
+                string @string = Encoding.ASCII.GetString(request.Payload);
+                string[] array = @string.Split(",");
+                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.newPlayerCount.ToString()))
+                {
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {array[1]}";
+                    response.Approved = false;
+                }
+            }
         }
     }
 }

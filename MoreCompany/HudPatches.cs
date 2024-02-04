@@ -47,15 +47,16 @@ namespace MoreCompany
 
                 GameObject parent = __instance.transform.parent.gameObject;
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
-                GameObject mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage").gameObject;
+                Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
-                    mainLogo.GetComponent<Image>().sprite = logoImage;
+                    mainLogo.gameObject.GetComponent<Image>().sprite = logoImage;
                 }
-                GameObject loadingScreen = parent.transform.Find("MenuContainer/LoadingScreen").gameObject;
-                if (loadingScreen != null) {
-                    loadingScreen.transform.localScale = new Vector3(1.02f, 1.06f, 1.02f);
-                    GameObject loadingLogo = loadingScreen.transform.Find("Image").gameObject;
+                Transform loadingScreen = parent.transform.Find("MenuContainer/LoadingScreen");
+                if (loadingScreen != null)
+                {
+                    loadingScreen.localScale = new Vector3(1.02f, 1.06f, 1.02f);
+                    Transform loadingLogo = loadingScreen.Find("Image");
                     if (loadingLogo != null)
                     {
                         loadingLogo.GetComponent<Image>().sprite = logoImage;

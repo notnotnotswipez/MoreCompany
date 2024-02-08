@@ -67,13 +67,11 @@ namespace MoreCompany
 						alreadyReplaced = true;
 						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
 						newInstructions.Add(codeInstruction);
-						//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
 					}
 				}
 
 				newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();

@@ -20,7 +20,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.7.6";
+        public const string PLUGIN_VERSION = "1.8.0";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -31,27 +31,27 @@ namespace MoreCompany
         public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
         public static bool showCosmetics = true;
-        
+
         public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
-        
+
         public static GameObject playerEntry;
         public static GameObject crewCountUI;
 
         public static GameObject cosmeticGUIInstance;
         public static GameObject cosmeticButton;
-        
+
         public static ManualLogSource StaticLogger;
-        
+
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
-        
+
         public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
         public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
-        
+
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
-        
+
         private void Awake()
         {
             StaticLogger = Logger;
@@ -84,8 +84,8 @@ namespace MoreCompany
                 StaticLogger.LogInfo("Creating cosmetics directory");
                 Directory.CreateDirectory(dynamicCosmeticsPath);
             }
-            
-            ReadSettingsFromFile(); 
+
+            ReadSettingsFromFile();
             ReadCosmeticsFromFile();
             StaticLogger.LogInfo("Read settings and cosmetics");
 
@@ -98,7 +98,7 @@ namespace MoreCompany
             RecursiveCosmeticLoad(Paths.PluginPath);
 
             LoadAssets(bundle);
-            
+
             StaticLogger.LogInfo("Loaded MoreCompany FULLY");
         }
 
@@ -108,7 +108,7 @@ namespace MoreCompany
             {
                 RecursiveCosmeticLoad(subDirectory);
             }
-            
+
             foreach (var file in Directory.GetFiles(directory))
             {
                 if (file.EndsWith(".cosmetics"))
@@ -131,7 +131,7 @@ namespace MoreCompany
                 }
             }
         }
-        
+
         public static void WriteCosmeticsToFile()
         {
             string built = "";
@@ -141,7 +141,7 @@ namespace MoreCompany
             }
             System.IO.File.WriteAllText(cosmeticSavePath, built);
         }
-        
+
         public static void SaveSettingsToFile()
         {
             string built = "";
@@ -149,7 +149,7 @@ namespace MoreCompany
             built += showCosmetics + "\n";
             System.IO.File.WriteAllText(moreCompanySave, built);
         }
-        
+
         public static void ReadSettingsFromFile()
         {
             if (System.IO.File.Exists(moreCompanySave))
@@ -292,19 +292,17 @@ namespace MoreCompany
                         alreadyReplaced = true;
                         CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                         continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
         }
     }
-    
+
     [HarmonyPatch(typeof(PlayerControllerB), "SendNewPlayerValuesClientRpc")]
     public static class SendNewPlayerValuesClientRpcPatch
     {
@@ -315,7 +313,7 @@ namespace MoreCompany
             {
                 return;
             }
-            
+
             if (StartOfRound.Instance.mapScreen.radarTargets.Count != StartOfRound.Instance.allPlayerScripts.Length)
             {
                 List<PlayerControllerB> useless = new List<PlayerControllerB>();
@@ -348,18 +346,16 @@ namespace MoreCompany
                 {
                     CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                     newInstructions.Add(codeInstruction);
-                    //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                     continue;
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
         }
     }
-    
+
     [HarmonyPatch]
     public static class SyncShipUnlockablesPatch
     {
@@ -384,15 +380,12 @@ namespace MoreCompany
                         CodeInstruction codeInstruction = new CodeInstruction(instruction);
                         codeInstruction.opcode = OpCodes.Ldsfld;
                         codeInstruction.operand = AccessTools.Field(typeof(MainClass), "newPlayerCount");
-                        //CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                         continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
@@ -418,19 +411,17 @@ namespace MoreCompany
                         alreadyReplaced = true;
                         CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                         continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
         }
     }
-    
+
     [HarmonyPatch(typeof(NetworkSceneManager), "PopulateScenePlacedObjects")]
     public static class ScenePlacedObjectsInitPatch
     {
@@ -439,7 +430,7 @@ namespace MoreCompany
             MainClass.ResizePlayerCache(___ScenePlacedObjects);
         }
     }
-    
+
     [HarmonyPatch(typeof(GameNetworkManager), "LobbyDataIsJoinable")]
     public static class LobbyDataJoinablePatch
     {
@@ -461,13 +452,11 @@ namespace MoreCompany
                         alreadyReplaced = true;
                         CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "maxPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                         continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
@@ -505,13 +494,11 @@ namespace MoreCompany
                         alreadyReplaced = true;
                         CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                         continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();

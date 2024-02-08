@@ -47,6 +47,7 @@ namespace MoreCompany
 
                 GameObject parent = __instance.transform.parent.gameObject;
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
+
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
@@ -115,7 +116,7 @@ namespace MoreCompany
             });
         }
 	}
-	
+
 	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
 	public static class AddUserPlayerListPatch
     {
@@ -124,32 +125,7 @@ namespace MoreCompany
             QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
             return false;
         }
-
-    //    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-    //    {
-    //        var newInstructions = new List<CodeInstruction>();
-    //        bool alreadyReplaced = false;
-    //        foreach (var instruction in instructions)
-    //        {
-    //            if (!alreadyReplaced)
-    //            {
-				//	if (instruction.ToString() == "ldc.i4.4 NULL")
-				//	{
-				//		alreadyReplaced = true;
-				//		CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-				//		newInstructions.Add(codeInstruction);
-				//		//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-				//		continue;
-				//	}
-				//}
-
-    //            newInstructions.Add(instruction);
-    //            //MainClass.StaticLogger.LogInfo(instruction.ToString());
-    //        }
-
-    //        return newInstructions.AsEnumerable();
-    //    }
-	}
+    }
 
     [HarmonyPatch(typeof(QuickMenuManager), "RemoveUserFromPlayerList")]
     public static class RemoveUserPlayerListPatch
@@ -290,54 +266,6 @@ namespace MoreCompany
                 }
             }
         }
-
-        //public static void Postfix(ref QuickMenuManager __instance)
-        //{
-        //          GameObject targetParent = __instance.playerListPanel.transform.Find("Image").gameObject;
-        //	GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent);
-        //	spawnedQuickmenu.transform.SetParent(targetParent.transform);
-        //	RectTransform rectTransform = spawnedQuickmenu.GetComponent<RectTransform>();
-        //	rectTransform.localPosition = new Vector3(0, -31.2f, 0);
-        //	rectTransform.localScale = Vector3.one;
-
-        //          QuickMenuManager quickMenuManager = __instance;
-        //          Array.Resize(ref __instance.playerListSlots, MainClass.newPlayerCount);
-        //          for (int i = 0; i < __instance.playerListSlots.Length; i++)
-        //          {
-        //		PlayerListSlot NewSlot = null;
-        //              if (__instance.playerListSlots[i] == null)
-        //              {
-        //                  NewSlot = new PlayerListSlot
-        //                  {
-        //                      isConnected = false,
-        //                      playerSteamId = __instance.playerListSlots[0].playerSteamId
-        //                  };
-        //              }
-        //		else
-        //		{
-        //                  NewSlot = __instance.playerListSlots[i];
-        //              }
-
-        //              GameObject NewSlot2 = Object.Instantiate(MainClass.playerEntry, spawnedQuickmenu.transform.Find("Holder"));
-        //              NewSlot.volumeSliderContainer = NewSlot2.transform.Find("VoiceVolumeSlider").gameObject;
-        //              NewSlot.KickUserButton = NewSlot2.transform.Find("KickButton").gameObject;
-        //              int localId = i;
-        //              Button kickButtonObj = NewSlot.KickUserButton.GetComponent<Button>();
-        //              kickButtonObj.onClick = new Button.ButtonClickedEvent();
-        //              kickButtonObj.onClick.AddListener(() => {
-        //                  quickMenuManager.KickUserFromServer(localId);
-        //              });
-        //              NewSlot.usernameHeader = NewSlot2.transform.Find("PlayerNameButton").Find("PName").gameObject.GetComponent<TextMeshProUGUI>();
-        //              NewSlot.volumeSlider = NewSlot2.transform.Find("VoiceVolumeSlider").Find("Slider").gameObject.GetComponent<Slider>();
-        //              RectTransform playerTransform = NewSlot2.GetComponent<RectTransform>();
-        //              playerTransform.localScale = Vector3.one;
-        //              playerTransform.localPosition = new Vector3(0, -playerTransform.localPosition.y, 0);
-        //              NewSlot.slotContainer = NewSlot2;
-        //              NewSlot.slotContainer.SetActive(NewSlot.isConnected);
-
-        //              __instance.playerListSlots[i] = NewSlot;
-        //          }
-        //      }
     }
 
     [HarmonyPatch(typeof(QuickMenuManager), "ConfirmKickUserFromServer")]
@@ -361,13 +289,11 @@ namespace MoreCompany
 						alreadyReplaced = true;
 						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
 						newInstructions.Add(codeInstruction);
-						//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
 					}
 				}
 
 				newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
@@ -383,10 +309,10 @@ namespace MoreCompany
 			int xVal = -64;
 			int yVal = 0;
 			int index = 0;
-			
+
 			int ySpacing = -70;
 			int xSpacing = 230;
-			
+
 			int maxPerRow = 4;
 			foreach (var animator in specPrivateDict)
 			{
@@ -418,18 +344,18 @@ namespace MoreCompany
             GameObject original = statUIElements.playerNamesText[0].gameObject.transform.parent.gameObject;
             GameObject megaPanel = original.transform.parent.parent.gameObject;
             GameObject backGroundBox = megaPanel.transform.Find("BGBoxes").gameObject;
-            
+
             // Set death screen to be above the endgamestats to render below it.
             megaPanel.transform.parent.Find("DeathScreen").SetSiblingIndex(3);
-            
+
             backGroundBox.transform.localScale = new Vector3(2.5f, 1, 1);
-            
+
             // Correctly fitting ui
             MakePlayerHolder(4, original, statUIElements, new Vector3(426.9556f, -0.7932f, 0));
             MakePlayerHolder(5, original, statUIElements, new Vector3(426.9556f, -115.4483f, 0));
             MakePlayerHolder(6, original, statUIElements, new Vector3(-253.6783f, -115.4483f, 0));
             MakePlayerHolder(7, original, statUIElements, new Vector3(-253.6783f, -0.7932f, 0));
-            
+
             // We want to hide all other ui elements, this will change once we introduce a new ui
             for (int i = 8; i < MainClass.newPlayerCount; i++)
             {
@@ -450,12 +376,12 @@ namespace MoreCompany
             rectTransform.SetParent(originalRectTransform.parent);
             rectTransform.localScale = new Vector3(1, 1, 1);
             rectTransform.localPosition = localPosition;
-            
+
             GameObject playerName = spawned.transform.Find("PlayerName1").gameObject;
             GameObject playerNotes = spawned.transform.Find("Notes").gameObject;
             playerNotes.GetComponent<RectTransform>().localPosition = new Vector3(-95.7222f, 43.3303f, 0);
             GameObject playerState = spawned.transform.Find("Symbol").gameObject;
-            
+
             // Resize arrays if they are too small
             if (index >= uiElements.playerNamesText.Length)
             {

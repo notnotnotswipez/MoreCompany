@@ -21,7 +21,7 @@ namespace MoreCompany
     public static class GameNetworkAwakePatch
     {
         public static int originalVersion = 0;
-        
+
         public static void Postfix(GameNetworkManager __instance)
         {
             originalVersion = __instance.gameVersionNum;

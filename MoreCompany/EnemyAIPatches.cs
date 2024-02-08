@@ -64,14 +64,12 @@ namespace MoreCompany
                         alreadyReplaced = true;
                         CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                         newInstructions.Add(codeInstruction);
-                        //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
                     }
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
-			}
+            }
 
             return newInstructions.AsEnumerable();
         }
@@ -98,13 +96,11 @@ namespace MoreCompany
 						alreadyReplaced = true;
 						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
 						newInstructions.Add(codeInstruction);
-						//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
 					}
 				}
 
 				newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
@@ -127,13 +123,11 @@ namespace MoreCompany
 						alreadyReplaced = true;
 						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
 						newInstructions.Add(codeInstruction);
-						//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
 					}
 				}
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
@@ -156,19 +150,17 @@ namespace MoreCompany
 						alreadyReplaced = true;
 						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
 						newInstructions.Add(codeInstruction);
-						//MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
-						continue;
+                        continue;
 					}
 				}
 
 				newInstructions.Add(instruction);
-				//MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();
         }
     }
-    
+
     [HarmonyPatch(typeof(DressGirlAI), "ChoosePlayerToHaunt")]
     public static class DressGirlHauntPatch
     {
@@ -181,12 +173,10 @@ namespace MoreCompany
                 {
                     CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                     newInstructions.Add(codeInstruction);
-                    //MainClass.StaticLogger.LogInfo(codeInstruction.ToString());
                     continue;
                 }
 
                 newInstructions.Add(instruction);
-                //MainClass.StaticLogger.LogInfo(instruction.ToString());
             }
 
             return newInstructions.AsEnumerable();

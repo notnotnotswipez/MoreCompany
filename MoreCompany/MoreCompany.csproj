@@ -41,7 +41,7 @@
 
   <!-- Development dependencies (set 'PrivateAsssets="all"') -->
   <ItemGroup>
-    <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all"/>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Runtime dependencies (common) -->
@@ -83,7 +83,7 @@
   <!-- prevent referenced assemblies from being copied to output folders -->
   <Target Name="ClearReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"/>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
   </Target>
 </Project>

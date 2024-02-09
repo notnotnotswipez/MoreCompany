@@ -121,24 +121,24 @@ namespace MoreCompany
         }
 
         public static void EnablePlayerObjectsBasedOnConnected()
+        {
+        	int connectedPlayersAmount = StartOfRound.Instance.connectedPlayersAmount;
+        	foreach (PlayerControllerB playerControllerB in StartOfRound.Instance.allPlayerScripts)
+        	{
+        		for (int j = 0; j < connectedPlayersAmount + 1; j++)
         		{
-        			int connectedPlayersAmount = StartOfRound.Instance.connectedPlayersAmount;
-        			foreach (PlayerControllerB playerControllerB in StartOfRound.Instance.allPlayerScripts)
+        			bool flag = !playerControllerB.isPlayerControlled && !playerControllerB.isPlayerDead;
+        			if (flag)
         			{
-        				for (int j = 0; j < connectedPlayersAmount + 1; j++)
-        				{
-        					bool flag = !playerControllerB.isPlayerControlled;
-        					if (flag)
-        					{
-        						playerControllerB.gameObject.SetActive(false);
-        					}
-        					else
-        					{
-        						playerControllerB.gameObject.SetActive(true);
-        					}
-        				}
+        				playerControllerB.gameObject.SetActive(false);
+        			}
+        			else
+        			{
+        				playerControllerB.gameObject.SetActive(true);
         			}
         		}
+        	}
+        }
 
         private void ReadCosmeticsFromFile()
         {

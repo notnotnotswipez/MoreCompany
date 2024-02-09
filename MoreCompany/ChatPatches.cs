@@ -108,6 +108,7 @@ namespace MoreCompany
                 {
                     chatMessage = ServerReceiveMessagePatch.previousDataMessage;
                     HandleDataMessage(ref chatMessage);
+                    return false;
                 }
                 else if (chatMessage.StartsWith("[morecompanycosmetics]"))
                 {
@@ -120,6 +121,7 @@ namespace MoreCompany
                 if (chatMessage.StartsWith("[morecompanycosmetics]"))
                 {
                     HandleDataMessage(ref chatMessage);
+                    return false;
                 }
             }
 

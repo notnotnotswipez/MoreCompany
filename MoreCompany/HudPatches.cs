@@ -123,6 +123,7 @@ namespace MoreCompany
         private static bool Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
         {
             QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
+            MainClass.EnablePlayerObjectsBasedOnConnected();
             return false;
         }
     }

@@ -32,8 +32,6 @@ namespace MoreCompany
         public static int maxPlayerCount = 50;
         public static bool showCosmetics = true;
 
-        public static List<PlayerControllerB> notSupposedToExistPlayers = new List<PlayerControllerB>();
-
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
 
@@ -249,8 +247,6 @@ namespace MoreCompany
 
                         PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
 
-                        notSupposedToExistPlayers.Add(newPlayerScript);
-
                         // Reset
                         newPlayerScript.playerClientId = (ulong)(4 + i);
                         newPlayerScript.playerUsername = $"Player #{newPlayerScript.playerClientId}";
@@ -266,6 +262,8 @@ namespace MoreCompany
                         round.gameStats.allPlayerStats[originalLength + i] = new PlayerStats();
                         round.allPlayerScripts[originalLength + i] = newPlayerScript;
                         round.playerSpawnPositions[originalLength + i] = round.playerSpawnPositions[3];
+
+                        StartOfRound.Instance.mapScreen.radarTargets.Add(new TransformAndName(newPlayerScript.transform, newPlayerScript.playerUsername, false));
                     }
                 }
             }
@@ -316,37 +314,6 @@ namespace MoreCompany
             }
 
             return newInstructions.AsEnumerable();
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerControllerB), "SendNewPlayerValuesClientRpc")]
-    public static class SendNewPlayerValuesClientRpcPatch
-    {
-        public static void Prefix(PlayerControllerB __instance, ref ulong[] playerSteamIds)
-        {
-            NetworkManager networkManager = __instance.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
-            {
-                return;
-            }
-
-            if (StartOfRound.Instance.mapScreen.radarTargets.Count != StartOfRound.Instance.allPlayerScripts.Length)
-            {
-                List<PlayerControllerB> useless = new List<PlayerControllerB>();
-                foreach (var notSupposedToBeHerePlayer in MainClass.notSupposedToExistPlayers)
-                {
-                    if (notSupposedToBeHerePlayer)
-                    {
-                        StartOfRound.Instance.mapScreen.radarTargets.Add(new TransformAndName(notSupposedToBeHerePlayer.transform, notSupposedToBeHerePlayer.playerUsername, false));
-                    }
-                    else
-                    {
-                        useless.Add(notSupposedToBeHerePlayer);
-                    }
-                }
-
-                MainClass.notSupposedToExistPlayers.RemoveAll(x => useless.Contains(x));
-            }
         }
     }
 

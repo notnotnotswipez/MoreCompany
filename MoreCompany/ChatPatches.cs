@@ -102,27 +102,20 @@ namespace MoreCompany
                 return false;
             }
 
-            if (networkManager.IsServer)
+            if (chatMessage.StartsWith("[replacewithdata]") && networkManager.IsServer)
             {
-                if (chatMessage.StartsWith("[replacewithdata]"))
-                {
-                    chatMessage = ServerReceiveMessagePatch.previousDataMessage;
-                    HandleDataMessage(ref chatMessage);
-                    return false;
-                }
-                else if (chatMessage.StartsWith("[morecompanycosmetics]"))
-                {
-                    // The server already handled this when the server branch was dealing with it.
-                    return false;
-                }
+                chatMessage = ServerReceiveMessagePatch.previousDataMessage;
+                HandleDataMessage(ref chatMessage);
+                return false;
             }
-            else
+            else if (chatMessage.StartsWith("[morecompanycosmetics]"))
             {
-                if (chatMessage.StartsWith("[morecompanycosmetics]"))
+                // The server already handled this when the server branch was dealing with it.
+                if (!networkManager.IsServer)
                 {
                     HandleDataMessage(ref chatMessage);
-                    return false;
                 }
+                return false;
             }
 
             return true;

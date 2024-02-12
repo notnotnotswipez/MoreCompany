@@ -1,5 +1,4 @@
 using HarmonyLib;
-using MoreCompany.Utils;
 using UnityEngine;
 
 namespace MoreCompany
@@ -27,7 +26,7 @@ namespace MoreCompany
             originalVersion = __instance.gameVersionNum;
 
             // LC_API compatibility.
-            if (!AssemblyChecker.HasAssemblyLoaded("lc_api"))
+            if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("LC_API"))
             {
 	            __instance.gameVersionNum = 9999;
             }

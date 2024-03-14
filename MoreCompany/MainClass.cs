@@ -45,16 +45,16 @@ namespace MoreCompany
 
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
 
-        public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
-        public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
+        public static string cosmeticSavePath;
+        public static string moreCompanySave;
 
-        public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+        public static string dynamicCosmeticsPath;
 
         private void Awake()
         {
             StaticLogger = Logger;
-            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
 
+            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
             {
                 harmony.PatchAll();
@@ -75,6 +75,10 @@ namespace MoreCompany
             {
                 newPlayerCount = lobby.MaxMembers;
             };
+
+            cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
+            moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
+            dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
 
             StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))

@@ -118,22 +118,6 @@ namespace MoreCompany
             }
         }
 
-        public static void EnablePlayerObjectsBasedOnConnected()
-        {
-            foreach (PlayerControllerB playerControllerB in StartOfRound.Instance.allPlayerScripts)
-            {
-                bool flag = !playerControllerB.isPlayerControlled && !playerControllerB.isPlayerDead;
-                if (flag)
-                {
-                    playerControllerB.gameObject.SetActive(false);
-                }
-                else
-                {
-                    playerControllerB.gameObject.SetActive(true);
-                }
-            }
-        }
-
         private void ReadCosmeticsFromFile()
         {
             if (System.IO.File.Exists(cosmeticSavePath))
@@ -271,6 +255,7 @@ namespace MoreCompany
             foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
             {
                 newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
+                newPlayerScript.gameObject.SetActive(false);
             }
         }
     }
@@ -500,6 +485,48 @@ namespace MoreCompany
                     response.Approved = false;
                 }
             }
+        }
+    }
+
+    [HarmonyPatch]
+    public static class TogglePlayerObjectsPatch
+    {
+        [HarmonyPatch(typeof(StartOfRound), "Update")]
+        [HarmonyPrefix]
+        private static void SORUpdate(StartOfRound __instance, bool ___hasHostSpawned)
+        {
+            if (GameNetworkManager.Instance != null && __instance.IsServer && !___hasHostSpawned)
+            {
+                __instance.allPlayerObjects[0].gameObject.SetActive(true);
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        [HarmonyPrefix]
+        private static void ConnectClientToPlayerObject()
+        {
+            foreach (PlayerControllerB playerControllerB in StartOfRound.Instance.allPlayerScripts)
+            {
+                bool flag = playerControllerB.isPlayerControlled || playerControllerB.isPlayerDead;
+                if (flag)
+                {
+                    playerControllerB.gameObject.SetActive(true);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), "OnPlayerConnectedClientRpc")]
+        [HarmonyPrefix]
+        private static void OnPlayerConnectedClientRpc(StartOfRound __instance, ulong clientId, int connectedPlayers, ulong[] connectedPlayerIdsOrdered, int assignedPlayerObjectId, int serverMoneyAmount, int levelID, int profitQuota, int timeUntilDeadline, int quotaFulfilled, int randomSeed, bool isChallenge)
+        {
+            __instance.allPlayerScripts[assignedPlayerObjectId].gameObject.SetActive(true);
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), "OnPlayerDC")]
+        [HarmonyPostfix]
+        private static void OnPlayerDC(StartOfRound __instance, int playerObjectNumber, ulong clientId)
+        {
+            __instance.allPlayerScripts[playerObjectNumber].gameObject.SetActive(false);
         }
     }
 }

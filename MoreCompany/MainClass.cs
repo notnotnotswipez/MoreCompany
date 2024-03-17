@@ -255,7 +255,6 @@ namespace MoreCompany
             foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
             {
                 newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
-                newPlayerScript.gameObject.SetActive(false);
             }
         }
     }
@@ -491,16 +490,6 @@ namespace MoreCompany
     [HarmonyPatch]
     public static class TogglePlayerObjectsPatch
     {
-        [HarmonyPatch(typeof(StartOfRound), "Update")]
-        [HarmonyPrefix]
-        private static void SORUpdate(StartOfRound __instance, bool ___hasHostSpawned)
-        {
-            if (GameNetworkManager.Instance != null && __instance.IsServer && !___hasHostSpawned)
-            {
-                __instance.allPlayerObjects[0].gameObject.SetActive(true);
-            }
-        }
-
         [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
         [HarmonyPrefix]
         private static void ConnectClientToPlayerObject()
@@ -511,6 +500,10 @@ namespace MoreCompany
                 if (flag)
                 {
                     playerControllerB.gameObject.SetActive(true);
+                }
+                else
+                {
+                    playerControllerB.gameObject.SetActive(false);
                 }
             }
         }

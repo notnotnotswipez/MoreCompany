@@ -52,7 +52,7 @@ namespace MoreCompany
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
 
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
-        public static string cosmeticSavePath = dynamicCosmeticsPath + "/enabled.log";
+        public static string cosmeticSavePath = Paths.BepInExRootPath + "/MCCosmeticsSave.log";
 
         private void Awake()
         {

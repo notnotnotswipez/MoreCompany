@@ -54,7 +54,6 @@ namespace MoreCompany
             {
                 if (!MainClass.cosmeticsSyncHost.Value)
                 {
-                    MainClass.StaticLogger.LogWarning("[TEST] Prevented Sync: " + chatMessage);
                     return false;
                 }
                 previousDataMessage = chatMessage;

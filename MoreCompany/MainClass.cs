@@ -59,10 +59,10 @@ namespace MoreCompany
             StaticLogger = Logger;
 
             StaticConfig = Config;
+            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "View Other Players Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
             cosmeticsSyncOwn = StaticConfig.Bind("Cosmetics", "Sync Own Cosmetics", true, "Should other players be able to see your cosmetics?");
-            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Enabled", true, "Should you be able to see cosmetics of other players?");
             cosmeticsSyncHost = StaticConfig.Bind("Cosmetics", "Host Sync", true, "This toggles whether cosmetics will sync between players in lobbies that you host.");
-            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be useable?");
+            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be usable?");
 
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try

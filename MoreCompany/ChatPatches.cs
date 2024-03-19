@@ -75,7 +75,10 @@ namespace MoreCompany
                 built += ";" + __instance.playerClientId;
                 foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
                 {
-                    built += ";" + cosmetic;
+                    if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmetic))
+                    {
+                        built += ";" + cosmetic;
+                    }
                 }
                 HUDManager.Instance.AddTextToChatOnServer(built);
             }

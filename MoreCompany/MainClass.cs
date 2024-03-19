@@ -33,8 +33,10 @@ namespace MoreCompany
         public static int maxPlayerCount = 50;
 
         public static ConfigFile StaticConfig;
-        public static ConfigEntry<bool> showCosmetics;
-        public static ConfigEntry<bool> showCosmeticsForced;
+        public static ConfigEntry<bool> cosmeticsSyncOwn;
+        public static ConfigEntry<bool> cosmeticsSyncOther;
+        public static ConfigEntry<bool> cosmeticsSyncHost;
+        public static ConfigEntry<bool> defaultCosmetics;
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
@@ -49,18 +51,18 @@ namespace MoreCompany
 
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
 
-        public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
-        public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
-
         public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+        public static string cosmeticSavePath = dynamicCosmeticsPath + "/enabled.log";
 
         private void Awake()
         {
             StaticLogger = Logger;
 
             StaticConfig = Config;
-            showCosmetics = StaticConfig.Bind("Cosmetics", "Visibility", true, "Should cosmetics be visible to you?");
-            showCosmeticsForced = StaticConfig.Bind("Cosmetics", "Force Visibility", false, "Should the option above be forced? This will disable the UI button.");
+            cosmeticsSyncOwn = StaticConfig.Bind("Cosmetics", "Sync Own Cosmetics", true, "Should other players be able to see your cosmetics?");
+            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Enabled", true, "Should you be able to see cosmetics of other players?");
+            cosmeticsSyncHost = StaticConfig.Bind("Cosmetics", "Host Sync", true, "This toggles whether cosmetics will sync between players in lobbies that you host.");
+            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be useable?");
 
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
@@ -84,25 +86,30 @@ namespace MoreCompany
                 newPlayerCount = lobby.MaxMembers;
             };
 
+            StaticLogger.LogInfo("Loading SETTINGS...");
+            ReadSettingsFromFile();
+
             StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))
             {
                 StaticLogger.LogInfo("Creating cosmetics directory");
                 Directory.CreateDirectory(dynamicCosmeticsPath);
             }
-
-            ReadSettingsFromFile();
+            StaticLogger.LogInfo("Loading COSMETICS...");
             ReadCosmeticsFromFile();
-            StaticLogger.LogInfo("Read settings and cosmetics");
 
-            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
-            AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
-            CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
-            cosmeticsBundle.Unload(false);
+            if (defaultCosmetics.Value)
+            {
+                StaticLogger.LogInfo("Loading DEFAULT COSMETICS...");
+                AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
+                CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
+                cosmeticsBundle.Unload(false);
+            }
 
             StaticLogger.LogInfo("Loading USER COSMETICS...");
             RecursiveCosmeticLoad(Paths.PluginPath);
 
+            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
             LoadAssets(bundle);
 
             StaticLogger.LogInfo("Loaded MoreCompany FULLY");
@@ -150,25 +157,19 @@ namespace MoreCompany
 
         public static void SaveSettingsToFile()
         {
-            string built = "";
-            built += newPlayerCount + "\n";
-            System.IO.File.WriteAllText(moreCompanySave, built);
+            ES3.Save("MC_PlayerSlots", newPlayerCount, "LCGeneralSaveData");
         }
 
         public static void ReadSettingsFromFile()
         {
-            if (System.IO.File.Exists(moreCompanySave))
+            try
             {
-                string[] lines = System.IO.File.ReadAllLines(moreCompanySave);
-                try
-                {
-                    newPlayerCount = Mathf.Clamp(int.Parse(lines[0]), minPlayerCount, maxPlayerCount);
-                }
-                catch (Exception e)
-                {
-                    StaticLogger.LogError("Failed to read settings from file, resetting to default");
-                    newPlayerCount = 32;
-                }
+                newPlayerCount = Mathf.Clamp(ES3.Load("MC_PlayerSlots", "LCGeneralSaveData", 32), minPlayerCount, maxPlayerCount);
+            }
+            catch (Exception e)
+            {
+                StaticLogger.LogError("Failed to read settings: " + e);
+                newPlayerCount = 32;
             }
         }
 

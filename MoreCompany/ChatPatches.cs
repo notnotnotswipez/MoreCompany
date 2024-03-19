@@ -52,6 +52,11 @@ namespace MoreCompany
             
             if (chatMessage.StartsWith("[morecompanycosmetics]") && networkManager.IsServer)
             {
+                if (!MainClass.cosmeticsSyncHost.Value)
+                {
+                    MainClass.StaticLogger.LogWarning("[TEST] Prevented Sync: " + chatMessage);
+                    return false;
+                }
                 previousDataMessage = chatMessage;
                 chatMessage = "[replacewithdata]";
             }
@@ -65,13 +70,27 @@ namespace MoreCompany
     {
         public static void Postfix(PlayerControllerB __instance)
         {
-            string built = "[morecompanycosmetics]";
-            built += ";" + __instance.playerClientId;
-            foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
+            if (MainClass.cosmeticsSyncOwn.Value)
             {
-                built += ";" + cosmetic;
+                string built = "[morecompanycosmetics]";
+                built += ";" + __instance.playerClientId;
+                foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
+                {
+                    built += ";" + cosmetic;
+                }
+                HUDManager.Instance.AddTextToChatOnServer(built);
             }
-            HUDManager.Instance.AddTextToChatOnServer(built);
+            else
+            {
+                CosmeticApplication existingCosmeticApplication = __instance.transform.Find("ScavengerModel")
+                    .Find("metarig").gameObject.GetComponent<CosmeticApplication>();
+
+                if (existingCosmeticApplication)
+                {
+                    existingCosmeticApplication.ClearCosmetics();
+                    GameObject.Destroy(existingCosmeticApplication);
+                }
+            }
         }
     }
     
@@ -133,6 +152,7 @@ namespace MoreCompany
             {
                 return;
             }
+
             string newMessage = chatMessage.Replace("[morecompanycosmetics]", "");
             string[] splitMessage = newMessage.Split(';');
             string playerIdString = splitMessage[1];
@@ -163,20 +183,23 @@ namespace MoreCompany
                 }
                 cosmeticsToApply.Add(cosmeticId);
 
-                if (MainClass.showCosmetics.Value)
+                if (MainClass.cosmeticsSyncOther.Value)
                 {
                     cosmeticApplication.ApplyCosmetic(cosmeticId, true);
                 }
             }
-            
-            if (playerIdNumeric == StartOfRound.Instance.thisClientPlayerId)
+
+            if (MainClass.cosmeticsSyncOther.Value)
             {
-                cosmeticApplication.ClearCosmetics();
-            }
-            
-            foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
-            {
-                cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+                if (playerIdNumeric == StartOfRound.Instance.thisClientPlayerId)
+                {
+                    cosmeticApplication.ClearCosmetics();
+                }
+
+                foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
+                {
+                    cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+                }
             }
 
             MainClass.playerIdsAndCosmetics.Remove(playerIdNumeric);

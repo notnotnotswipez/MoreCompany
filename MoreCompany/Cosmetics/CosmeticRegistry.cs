@@ -56,7 +56,7 @@ namespace MoreCompany.Cosmetics
 
         public static void UpdateVisibilityCheckbox(GameObject enableCosmeticsButton, GameObject disableCosmeticsButton)
         {
-            if (MainClass.showCosmetics.Value)
+            if (MainClass.cosmeticsSyncOther.Value)
             {
                 enableCosmeticsButton.SetActive(false);
                 disableCosmeticsButton.SetActive(true);
@@ -82,31 +82,13 @@ namespace MoreCompany.Cosmetics
             GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
             enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
-                if (!MainClass.showCosmeticsForced.Value)
-                {
-                    MainClass.showCosmetics.Value = true;
-                    MainClass.StaticConfig.Save();
-                }
-                else
-                {
-                    UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
-                    GameObject.Find("CosmeticsScreen/ExitButton").GetComponent<Button>().onClick.Invoke();
-                    Object.FindObjectOfType<MenuManager>().DisplayMenuNotification("This button is disabled in the MoreCompany config!", "[ Back ]");
-                }
+                MainClass.cosmeticsSyncOther.Value = true;
+                MainClass.StaticConfig.Save();
             });
             disableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
-                if (!MainClass.showCosmeticsForced.Value)
-                {
-                    MainClass.showCosmetics.Value = false;
-                    MainClass.StaticConfig.Save();
-                }
-                else
-                {
-                    UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
-                    GameObject.Find("CosmeticsScreen/ExitButton").GetComponent<Button>().onClick.Invoke();
-                    Object.FindObjectOfType<MenuManager>().DisplayMenuNotification("This button is disabled in the MoreCompany config!", "[ Back ]");
-                }
+                MainClass.cosmeticsSyncOther.Value = false;
+                MainClass.StaticConfig.Save();
             });
 
             UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);

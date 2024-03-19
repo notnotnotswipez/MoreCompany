@@ -54,6 +54,20 @@ namespace MoreCompany.Cosmetics
             }
         }
 
+        public static void UpdateVisibilityCheckbox(GameObject enableCosmeticsButton, GameObject disableCosmeticsButton)
+        {
+            if (MainClass.showCosmetics.Value)
+            {
+                enableCosmeticsButton.SetActive(false);
+                disableCosmeticsButton.SetActive(true);
+            }
+            else
+            {
+                enableCosmeticsButton.SetActive(true);
+                disableCosmeticsButton.SetActive(false);
+            }
+        }
+
         public static void SpawnCosmeticGUI()
         {
             cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
@@ -65,30 +79,38 @@ namespace MoreCompany.Cosmetics
             cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
             
             GameObject enableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("EnableButton").gameObject;
+            GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
             enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
-                MainClass.showCosmetics = true;
-                MainClass.SaveSettingsToFile();
+                if (!MainClass.showCosmeticsForced.Value)
+                {
+                    MainClass.showCosmetics.Value = true;
+                    MainClass.StaticConfig.Save();
+                }
+                else
+                {
+                    UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
+                    GameObject.Find("CosmeticsScreen/ExitButton").GetComponent<Button>().onClick.Invoke();
+                    Object.FindObjectOfType<MenuManager>().DisplayMenuNotification("This button is disabled in the MoreCompany config!", "[ Back ]");
+                }
             });
-            
-            GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
             disableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
-                MainClass.showCosmetics = false;
-                MainClass.SaveSettingsToFile();
+                if (!MainClass.showCosmeticsForced.Value)
+                {
+                    MainClass.showCosmetics.Value = false;
+                    MainClass.StaticConfig.Save();
+                }
+                else
+                {
+                    UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
+                    GameObject.Find("CosmeticsScreen/ExitButton").GetComponent<Button>().onClick.Invoke();
+                    Object.FindObjectOfType<MenuManager>().DisplayMenuNotification("This button is disabled in the MoreCompany config!", "[ Back ]");
+                }
             });
-            
-            if (MainClass.showCosmetics)
-            {
-                enableCosmeticsButton.SetActive(false);
-                disableCosmeticsButton.SetActive(true);
-            }
-            else
-            {
-                enableCosmeticsButton.SetActive(true);
-                disableCosmeticsButton.SetActive(false);
-            }
-            
+
+            UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
+
             PopulateCosmetics();
             UpdateCosmeticsOnDisplayGuy(false);
         }

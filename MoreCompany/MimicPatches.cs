@@ -15,7 +15,7 @@ namespace MoreCompany
         {
             public static void Postfix(ref MaskedPlayerEnemy __instance)
             {
-                if (__instance.mimickingPlayer != null && MainClass.showCosmetics)
+                if (__instance.mimickingPlayer != null && MainClass.showCosmetics.Value)
                 {
                     List<string> cosmetics = MainClass.playerIdsAndCosmetics[(int)__instance.mimickingPlayer.playerClientId];
                     Transform cosmeticRoot = __instance.transform.Find("ScavengerModel").Find("metarig");

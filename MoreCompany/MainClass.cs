@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -30,7 +31,10 @@ namespace MoreCompany
         public static int newPlayerCount = 32;
         public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
-        public static bool showCosmetics = true;
+
+        public static ConfigFile StaticConfig;
+        public static ConfigEntry<bool> showCosmetics;
+        public static ConfigEntry<bool> showCosmeticsForced;
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
@@ -53,8 +57,12 @@ namespace MoreCompany
         private void Awake()
         {
             StaticLogger = Logger;
-            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
 
+            StaticConfig = Config;
+            showCosmetics = StaticConfig.Bind("Cosmetics", "Visibility", true, "Should cosmetics be visible to you?");
+            showCosmeticsForced = StaticConfig.Bind("Cosmetics", "Force Visibility", false, "Should the option above be forced? This will disable the UI button.");
+
+            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
             {
                 harmony.PatchAll();
@@ -144,7 +152,6 @@ namespace MoreCompany
         {
             string built = "";
             built += newPlayerCount + "\n";
-            built += showCosmetics + "\n";
             System.IO.File.WriteAllText(moreCompanySave, built);
         }
 
@@ -156,13 +163,11 @@ namespace MoreCompany
                 try
                 {
                     newPlayerCount = Mathf.Clamp(int.Parse(lines[0]), minPlayerCount, maxPlayerCount);
-                    showCosmetics = bool.Parse(lines[1]);
                 }
                 catch (Exception e)
                 {
                     StaticLogger.LogError("Failed to read settings from file, resetting to default");
                     newPlayerCount = 32;
-                    showCosmetics = true;
                 }
             }
         }

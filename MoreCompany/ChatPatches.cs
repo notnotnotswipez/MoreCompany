@@ -163,7 +163,7 @@ namespace MoreCompany
                 }
                 cosmeticsToApply.Add(cosmeticId);
 
-                if (MainClass.showCosmetics)
+                if (MainClass.showCosmetics.Value)
                 {
                     cosmeticApplication.ApplyCosmetic(cosmeticId, true);
                 }

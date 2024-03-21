@@ -71,6 +71,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SpringManAIUpdatePatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -103,6 +105,8 @@ namespace MoreCompany
 				newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SpringManAIIntervalPatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
 	}
@@ -129,6 +133,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("GetClosestPlayerPatch failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -157,6 +163,8 @@ namespace MoreCompany
 				newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("GetAllPlayersInLineOfSightPatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -167,17 +175,24 @@ namespace MoreCompany
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
+            bool alreadyReplaced = false;
             foreach (var instruction in instructions)
             {
-                if (instruction.ToString() == "ldc.i4.4 NULL")
+                if (!alreadyReplaced)
                 {
-                    CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-                    newInstructions.Add(codeInstruction);
-                    continue;
+                    if (instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        alreadyReplaced = true;
+                        continue;
+                    }
                 }
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("DressGirlHauntPatch failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }

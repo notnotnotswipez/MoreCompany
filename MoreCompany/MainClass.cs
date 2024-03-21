@@ -28,12 +28,13 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
-        public static int newPlayerCount = 32;
+        public static int defaultPlayerCount = 32;
         public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
+        public static int newPlayerCount = 32;
 
         public static ConfigFile StaticConfig;
-        public static ConfigEntry<bool> cosmeticsSyncOwn;
+        public static ConfigEntry<int> playerCount;
         public static ConfigEntry<bool> cosmeticsSyncOther;
         public static ConfigEntry<bool> cosmeticsSyncHost;
         public static ConfigEntry<bool> defaultCosmetics;
@@ -51,18 +52,18 @@ namespace MoreCompany
 
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
 
-        public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
-        public static string cosmeticSavePath = Paths.BepInExRootPath + "/MCCosmeticsSave.log";
+        public static string dynamicCosmeticsPath;
+        public static string cosmeticSavePath;
 
         private void Awake()
         {
             StaticLogger = Logger;
-
             StaticConfig = Config;
-            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "View Other Players Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
-            cosmeticsSyncOwn = StaticConfig.Bind("Cosmetics", "Sync Own Cosmetics", true, "Should other players be able to see your cosmetics?");
-            cosmeticsSyncHost = StaticConfig.Bind("Cosmetics", "Host Sync", true, "This toggles whether cosmetics will sync between players in lobbies that you host.");
-            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be usable?");
+
+            playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
+            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
+            cosmeticsSyncHost = StaticConfig.Bind("Cosmetics", "Host Sync", true, "Disabling this prevents players in lobbies that you host from seeing any cosmetics.");
+            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
 
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
@@ -88,6 +89,9 @@ namespace MoreCompany
 
             StaticLogger.LogInfo("Loading SETTINGS...");
             ReadSettingsFromFile();
+
+            dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+            cosmeticSavePath = Paths.BepInExRootPath + "/MCCosmeticsSave.log";
 
             StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))
@@ -157,19 +161,21 @@ namespace MoreCompany
 
         public static void SaveSettingsToFile()
         {
-            ES3.Save("MC_PlayerSlots", newPlayerCount, "LCGeneralSaveData");
+            playerCount.Value = newPlayerCount;
+            StaticConfig.Save();
         }
 
         public static void ReadSettingsFromFile()
         {
             try
             {
-                newPlayerCount = Mathf.Clamp(ES3.Load("MC_PlayerSlots", "LCGeneralSaveData", 32), minPlayerCount, maxPlayerCount);
+                newPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
             }
-            catch (Exception e)
+            catch
             {
-                StaticLogger.LogError("Failed to read settings: " + e);
-                newPlayerCount = 32;
+                newPlayerCount = defaultPlayerCount;
+                playerCount.Value = newPlayerCount;
+                StaticConfig.Save();
             }
         }
 
@@ -193,7 +199,6 @@ namespace MoreCompany
             if (round.allPlayerObjects.Length != newPlayerCount)
             {
                 StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
-                playerIdsAndCosmetics.Clear();
                 uint starting = 10000;
 
                 int originalLength = round.allPlayerObjects.Length;
@@ -303,6 +308,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SendNewPlayerValuesServerRpcPatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -313,17 +320,24 @@ namespace MoreCompany
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
+            bool alreadyReplaced = false;
             foreach (var instruction in instructions)
             {
-                if (instruction.ToString() == "ldc.i4.4 NULL")
+                if (!alreadyReplaced)
                 {
-                    CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-                    newInstructions.Add(codeInstruction);
-                    continue;
+                    if (instruction.ToString() == "ldc.i4.4 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
+                        continue;
+                    }
                 }
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SyncAllPlayerLevelsPatch failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -361,6 +375,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning("SyncShipUnlockablesServerRpc failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
 
@@ -390,6 +406,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SyncShipUnlockablesClientRpc failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -432,6 +450,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("LobbyDataIsJoinable failed to replace maxPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -473,6 +493,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }

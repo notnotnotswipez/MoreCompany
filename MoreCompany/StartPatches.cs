@@ -19,7 +19,7 @@ namespace MoreCompany
             Array.Resize(ref __instance.playerVoiceVolumes, MainClass.newPlayerCount);
             Array.Resize(ref __instance.playerVoiceMixers, MainClass.newPlayerCount);
 
-            AudioMixerGroup audioMixerGroup = Resources.FindObjectsOfTypeAll<AudioMixerGroup>().FirstOrDefault(x => x.name.Contains("Voice"));
+            AudioMixerGroup audioMixerGroup = Resources.FindObjectsOfTypeAll<AudioMixerGroup>().FirstOrDefault(x => x.name.StartsWith("VoicePlayer"));
             for (int i = 0; i < MainClass.newPlayerCount; i++)
             {
                 __instance.playerVoicePitchLerpSpeed[i] = 3f;
@@ -28,7 +28,9 @@ namespace MoreCompany
                 __instance.playerVoiceVolumes[i] = 0.5f;
 				if (!__instance.playerVoiceMixers[i])
 				{
-					__instance.playerVoiceMixers[i] = audioMixerGroup;
+                    AudioMixerGroup newAudioMixerGroup = GameObject.Instantiate(audioMixerGroup);
+                    newAudioMixerGroup.name = $"VoicePlayer{i}";
+                    __instance.playerVoiceMixers[i] = newAudioMixerGroup;
 				}
             }
         }
@@ -73,6 +75,8 @@ namespace MoreCompany
 
 				newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("OnClientConnect failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }

@@ -142,10 +142,15 @@ namespace MoreCompany
             {
                 cosmeticsToApply.Add(cosmeticId);
 
-                if (MainClass.cosmeticsSyncOther.Value && senderId != StartOfRound.Instance.thisClientPlayerId)
+                if (MainClass.cosmeticsSyncOther.Value)
                 {
                     cosmeticApplication.ApplyCosmetic(cosmeticId, true);
                 }
+            }
+
+            if (senderId == StartOfRound.Instance.thisClientPlayerId)
+            {
+                cosmeticApplication.ClearCosmetics();
             }
 
             foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)

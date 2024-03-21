@@ -12,12 +12,12 @@ namespace MoreCompany
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
-            bool alreadyReplaced = false;
+            int alreadyReplaced = 0;
             foreach (var instruction in instructions)
             {
                 if (instruction.ToString() == "ldc.i4.4 NULL")
                 {
-                    alreadyReplaced = true;
+                    alreadyReplaced++;
                     CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                     newInstructions.Add(codeInstruction);
                     continue;
@@ -26,7 +26,7 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SpectateNextPlayer failed to replace newPlayerCount");
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"SpectateNextPlayer failed to replace newPlayerCount: {alreadyReplaced}/2");
 
             return newInstructions.AsEnumerable();
         }

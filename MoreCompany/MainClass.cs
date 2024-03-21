@@ -320,24 +320,21 @@ namespace MoreCompany
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
-            bool alreadyReplaced = false;
+            int alreadyReplaced = 0;
             foreach (var instruction in instructions)
             {
-                if (!alreadyReplaced)
+                if (instruction.ToString() == "ldc.i4.4 NULL")
                 {
-                    if (instruction.ToString() == "ldc.i4.4 NULL")
-                    {
-                        alreadyReplaced = true;
-                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-                        newInstructions.Add(codeInstruction);
-                        continue;
-                    }
+                    alreadyReplaced++;
+                    CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                    newInstructions.Add(codeInstruction);
+                    continue;
                 }
 
                 newInstructions.Add(instruction);
             }
 
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SyncAllPlayerLevelsPatch failed to replace newPlayerCount");
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"SyncAllPlayerLevelsPatch failed to replace newPlayerCount: {alreadyReplaced}/2");
 
             return newInstructions.AsEnumerable();
         }
@@ -375,7 +372,7 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
-            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning("SyncShipUnlockablesServerRpc failed to replace newPlayerCount");
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"SyncShipUnlockablesServerRpc failed to replace newPlayerCount: {alreadyReplaced}/2");
 
             return newInstructions.AsEnumerable();
         }

@@ -124,8 +124,6 @@ namespace MoreCompany
 
             if (targetId != -1 && targetId != StartOfRound.Instance.thisClientPlayerId) { return; }
 
-            MainClass.StaticLogger.LogWarning($"[TEST] HandleDataMessage ({senderId} > {targetId}): {string.Join(';', splitMessage)}");
-
             CosmeticApplication cosmeticApplication = StartOfRound.Instance.allPlayerScripts[senderId].transform.Find("ScavengerModel")
                 .Find("metarig").gameObject.GetComponent<CosmeticApplication>();
 

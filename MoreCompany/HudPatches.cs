@@ -92,30 +92,39 @@ namespace MoreCompany
             inputField.characterLimit = 3;
             inputField.text = MainClass.newPlayerCount.ToString();
             inputFields.Add(inputField);
-            inputField.onValueChanged.AddListener(s =>
-            {
-                if (inputField.text == MainClass.newPlayerCount.ToString())
-                    return;
-
-                if (int.TryParse(s, out int result))
-                {
-                    MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                    foreach(TMP_InputField field in inputFields)
-                        field.text = MainClass.newPlayerCount.ToString();
-                    MainClass.SaveSettingsToFile();
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
-                }
-                else if (s.Length != 0)
-                {
-                    foreach (TMP_InputField field in inputFields)
-                    {
-                        field.text = MainClass.newPlayerCount.ToString();
-                        field.caretPosition = 1;
-                    }
-                }
+            inputField.onSubmit.AddListener(s => {
+                UpdateTextBox(inputField, s);
+            });
+            inputField.onDeselect.AddListener(s => {
+                UpdateTextBox(inputField, s);
             });
         }
-	}
+
+        public static void UpdateTextBox(TMP_InputField inputField, string s)
+        {
+            if (inputField.text == MainClass.newPlayerCount.ToString())
+                return;
+
+            if (int.TryParse(s, out int result))
+            {
+                int originalCount = MainClass.newPlayerCount;
+                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                foreach (TMP_InputField field in inputFields)
+                    field.text = MainClass.newPlayerCount.ToString();
+                MainClass.SaveSettingsToFile();
+                if (MainClass.newPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+            }
+            else if (s.Length != 0)
+            {
+                foreach (TMP_InputField field in inputFields)
+                {
+                    field.text = MainClass.newPlayerCount.ToString();
+                    field.caretPosition = 1;
+                }
+            }
+        }
+    }
 
 	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
 	public static class AddUserPlayerListPatch

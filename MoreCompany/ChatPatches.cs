@@ -95,24 +95,21 @@ namespace MoreCompany
 
         [HarmonyPatch(typeof(HUDManager), "AddTextMessageClientRpc")]
         [HarmonyPrefix]
-        public static bool AddTextMessageClientRpc_Prefix(HUDManager __instance, string chatMessage)
+        public static void AddTextMessageClientRpc_Prefix(HUDManager __instance, string chatMessage)
         {
             if (chatMessage.StartsWith("[morecompanycosmetics]"))
             {
                 NetworkManager networkManager = __instance.NetworkManager;
                 if (networkManager == null || !networkManager.IsListening)
                 {
-                    return false;
+                    return;
                 }
 
                 if ((__RpcExecStage)__rpc_exec_stage.GetValue(__instance) == __RpcExecStage.Client && (networkManager.IsClient || networkManager.IsHost))
                 {
                     HandleDataMessage(chatMessage);
-                    return false;
                 }
             }
-
-            return true;
         }
 
         internal static void HandleDataMessage(string chatMessage)

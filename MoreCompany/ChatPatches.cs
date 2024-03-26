@@ -1,20 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
 using MoreCompany.Cosmetics;
 using Unity.Netcode;
-using UnityEngine;
 
 namespace MoreCompany
 {
-    
     [HarmonyPatch(typeof(HUDManager), "AddTextToChatOnServer")]
     public static class SendChatToServerPatch
     {
-        public static bool Prefix(HUDManager __instance, string chatMessage, int playerId = -1)
+        public static bool Prefix(string chatMessage, int playerId = -1)
         {
             if (StartOfRound.Instance.IsHost)
             {
@@ -27,58 +25,152 @@ namespace MoreCompany
                 }
             }
 
-            if (chatMessage.StartsWith("[morecompanycosmetics]"))
-            {
-                ReflectionUtils.InvokeMethod(__instance, "AddPlayerChatMessageServerRpc", new object[] {chatMessage, 99});
-                return false;
-            }
-            
             return true;
         }
     }
-    
-    [HarmonyPatch(typeof(HUDManager), "AddPlayerChatMessageServerRpc")]
-    public static class ServerReceiveMessagePatch
-    {
-        public static string previousDataMessage = "";
-        
-        public static bool Prefix(HUDManager __instance, ref string chatMessage, int playerId)
-        {
-            NetworkManager networkManager = __instance.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
-            {
-                return false;
-            }
-            
-            if (chatMessage.StartsWith("[morecompanycosmetics]") && networkManager.IsServer)
-            {
-                previousDataMessage = chatMessage;
-                chatMessage = "[replacewithdata]";
-            }
 
-            return true;
-        }
-    }
-    
-    [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
-    public static class ConnectClientToPlayerObjectPatch
+    [HarmonyPatch]
+    public static class ClientReceiveMessagePatch
     {
-        public static void Postfix(PlayerControllerB __instance)
+        internal static MethodInfo AddTextMessageServerRpc = AccessTools.Method(typeof(HUDManager), "AddTextMessageServerRpc");
+        internal static FieldInfo __rpc_exec_stage = AccessTools.Field(typeof(NetworkBehaviour), "__rpc_exec_stage");
+        internal enum __RpcExecStage
         {
-            string built = "[morecompanycosmetics]";
-            built += ";" + __instance.playerClientId;
+            None,
+            Server,
+            Client
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        [HarmonyPostfix]
+        public static void ConnectClientToPlayerObject_Postfix(PlayerControllerB __instance)
+        {
+            MainClass.playerIdsAndCosmetics.Clear();
+
+            string built = $"[morecompanycosmetics];{__instance.playerClientId};-1";
             foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
             {
-                built += ";" + cosmetic;
+                if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmetic))
+                {
+                    built += ";" + cosmetic;
+                }
             }
-            HUDManager.Instance.AddTextToChatOnServer(built);
+            AddTextMessageServerRpc?.Invoke(HUDManager.Instance, new object[] { built });
+        }
+
+        [HarmonyPatch(typeof(HUDManager), "AddTextMessageServerRpc")]
+        [HarmonyPostfix]
+        public static void AddTextMessageServerRpc_Postfix(HUDManager __instance, string chatMessage)
+        {
+            if (chatMessage.StartsWith("[morecompanycosmetics]"))
+            {
+                NetworkManager networkManager = __instance.NetworkManager;
+                if (networkManager == null || !networkManager.IsListening)
+                {
+                    return;
+                }
+
+                if ((__RpcExecStage)__rpc_exec_stage.GetValue(__instance) != __RpcExecStage.Server && networkManager.IsHost)
+                {
+                    string[] splitMessage = chatMessage.Split(';');
+                    int senderId = int.Parse(splitMessage[1]);
+                    int targetId = int.Parse(splitMessage[2]);
+                    if (targetId == -1)
+                    {
+                        foreach (var keyPair in MainClass.playerIdsAndCosmetics.ToList())
+                        {
+                            if (keyPair.Key == senderId) { continue; }
+
+                            string built = $"[morecompanycosmetics];{keyPair.Key};{senderId}";
+                            foreach (var cosmetic in keyPair.Value)
+                            {
+                                built += ";" + cosmetic;
+                            }
+                            AddTextMessageServerRpc?.Invoke(__instance, new object[] { built });
+                        }
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(HUDManager), "AddTextMessageClientRpc")]
+        [HarmonyPrefix]
+        public static void AddTextMessageClientRpc_Prefix(HUDManager __instance, string chatMessage)
+        {
+            if (chatMessage.StartsWith("[morecompanycosmetics]"))
+            {
+                NetworkManager networkManager = __instance.NetworkManager;
+                if (networkManager == null || !networkManager.IsListening)
+                {
+                    return;
+                }
+
+                if ((__RpcExecStage)__rpc_exec_stage.GetValue(__instance) == __RpcExecStage.Client && (networkManager.IsClient || networkManager.IsHost))
+                {
+                    HandleDataMessage(chatMessage);
+                }
+            }
+        }
+
+        internal static void HandleDataMessage(string chatMessage)
+        {
+            string[] splitMessage = chatMessage.Split(';');
+            int senderId = int.Parse(splitMessage[1]);
+            int targetId = int.Parse(splitMessage[2]);
+            splitMessage = splitMessage.Skip(3).ToArray();
+
+            if (targetId != -1 && targetId != StartOfRound.Instance.thisClientPlayerId) { return; }
+
+            CosmeticApplication cosmeticApplication = StartOfRound.Instance.allPlayerScripts[senderId].transform.Find("ScavengerModel")
+                .Find("metarig").gameObject.GetComponent<CosmeticApplication>();
+
+            if (!cosmeticApplication)
+            {
+                cosmeticApplication = StartOfRound.Instance.allPlayerScripts[senderId].transform.Find("ScavengerModel")
+                .Find("metarig").gameObject.AddComponent<CosmeticApplication>();
+            }
+
+            cosmeticApplication.ClearCosmetics();
+            
+            List<string> cosmeticsToApply = new List<string>();
+            foreach (string cosmeticId in splitMessage)
+            {
+                cosmeticsToApply.Add(cosmeticId);
+
+                if (MainClass.cosmeticsSyncOther.Value)
+                {
+                    cosmeticApplication.ApplyCosmetic(cosmeticId, true);
+                }
+            }
+
+            if (senderId == StartOfRound.Instance.thisClientPlayerId)
+            {
+                cosmeticApplication.ClearCosmetics();
+            }
+
+            foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
+            {
+                cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
+            }
+
+            if (MainClass.playerIdsAndCosmetics.ContainsKey(senderId))
+            {
+                MainClass.playerIdsAndCosmetics[senderId] = cosmeticsToApply;
+            }
+            else
+            {
+                MainClass.playerIdsAndCosmetics.Add(senderId, cosmeticsToApply);
+            }
         }
     }
-    
-    [HarmonyPatch(typeof(HUDManager), "AddChatMessage")]
-    public static class AddChatMessagePatch
+
+
+    [HarmonyPatch]
+    public static class PreventOldVersionChatSpamPatch
     {
-        public static bool Prefix(HUDManager __instance, string chatMessage, string nameOfUserWhoTyped = "")
+        [HarmonyPatch(typeof(HUDManager), "AddChatMessage")]
+        [HarmonyPrefix]
+        public static bool AddChatMessage_Prefix(string chatMessage, string nameOfUserWhoTyped = "")
         {
             if (chatMessage.StartsWith("[replacewithdata]") || chatMessage.StartsWith("[morecompanycosmetics]"))
             {
@@ -87,117 +179,17 @@ namespace MoreCompany
 
             return true;
         }
-    }
-    
-    [HarmonyPatch(typeof(HUDManager), "AddPlayerChatMessageClientRpc")]
-    public static class ClientReceiveMessagePatch
-    {
-        public static bool ignoreSample = false;
-        
-        public static bool Prefix(HUDManager __instance, string chatMessage, int playerId)
+
+        [HarmonyPatch(typeof(HUDManager), "AddPlayerChatMessageClientRpc")]
+        [HarmonyPrefix]
+        public static bool AddPlayerChatMessageClientRpc_Prefix(string chatMessage, int playerId)
         {
-            NetworkManager networkManager = __instance.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
+            if (chatMessage.StartsWith("[replacewithdata]") || chatMessage.StartsWith("[morecompanycosmetics]"))
             {
                 return false;
             }
 
-            if (networkManager.IsServer)
-            {
-                if (chatMessage.StartsWith("[replacewithdata]"))
-                {
-                    HandleDataMessage(ServerReceiveMessagePatch.previousDataMessage);
-                    return false;
-                }
-                else if (chatMessage.StartsWith("[morecompanycosmetics]"))
-                {
-                    // The server already handled this when the server branch was dealing with it.
-                    return false;
-                }
-            }
-            else
-            {
-                if (chatMessage.StartsWith("[morecompanycosmetics]"))
-                {
-                    HandleDataMessage(chatMessage);
-                    return false;
-                }
-            }
-
             return true;
-        }
-        
-        private static void HandleDataMessage(string chatMessage)
-        {
-            if (ignoreSample)
-            {
-                return;
-            }
-            string newMessage = chatMessage.Replace("[morecompanycosmetics]", "");
-            string[] splitMessage = newMessage.Split(';');
-            string playerIdString = splitMessage[1];
-
-            int playerIdNumeric = int.Parse(playerIdString);
-            
-            CosmeticApplication existingCosmeticApplication = StartOfRound.Instance.allPlayerScripts[playerIdNumeric].transform.Find("ScavengerModel")
-                .Find("metarig").gameObject.GetComponent<CosmeticApplication>();
-
-            if (existingCosmeticApplication)
-            {
-                existingCosmeticApplication.ClearCosmetics();
-                GameObject.Destroy(existingCosmeticApplication);
-            }
-
-            CosmeticApplication cosmeticApplication = StartOfRound.Instance.allPlayerScripts[playerIdNumeric].transform.Find("ScavengerModel")
-                .Find("metarig").gameObject.AddComponent<CosmeticApplication>();
-            
-            cosmeticApplication.ClearCosmetics();
-            
-            List<string> cosmeticsToApply = new List<string>();
-            
-            foreach (var cosmeticId in splitMessage)
-            {
-                if (cosmeticId == playerIdString)
-                {
-                    continue;
-                }
-                cosmeticsToApply.Add(cosmeticId);
-
-                if (MainClass.showCosmetics)
-                {
-                    cosmeticApplication.ApplyCosmetic(cosmeticId, true);
-                }
-            }
-            
-            if (playerIdNumeric == StartOfRound.Instance.thisClientPlayerId)
-            {
-                cosmeticApplication.ClearCosmetics();
-            }
-            
-            foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
-            {
-                cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
-            }
-
-            MainClass.playerIdsAndCosmetics.Remove(playerIdNumeric);
-            MainClass.playerIdsAndCosmetics.Add(playerIdNumeric, cosmeticsToApply);
-
-            if (GameNetworkManager.Instance.isHostingGame && (playerIdNumeric != 0))
-            {
-                ignoreSample = true;
-                foreach (var keyPair in MainClass.playerIdsAndCosmetics)
-                {
-                    string built = "[morecompanycosmetics]";
-                    built += ";" + keyPair.Key;
-                    foreach (var cosmetic in keyPair.Value)
-                    {
-                        built += ";" + cosmetic;
-                    }
-                    HUDManager.Instance.AddTextToChatOnServer(built);
-                }
-                
-                ignoreSample = false;
-            }
         }
     }
 }

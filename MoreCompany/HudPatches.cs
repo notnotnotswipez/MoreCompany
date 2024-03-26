@@ -296,6 +296,8 @@ namespace MoreCompany
 				newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("KickPatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }

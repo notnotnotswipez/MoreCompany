@@ -36,7 +36,6 @@ namespace MoreCompany
         public static ConfigFile StaticConfig;
         public static ConfigEntry<int> playerCount;
         public static ConfigEntry<bool> cosmeticsSyncOther;
-        public static ConfigEntry<bool> cosmeticsSyncHost;
         public static ConfigEntry<bool> defaultCosmetics;
 
         public static Texture2D mainLogo;
@@ -62,7 +61,6 @@ namespace MoreCompany
 
             playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
-            cosmeticsSyncHost = StaticConfig.Bind("Cosmetics", "Host Sync", true, "Disabling this prevents players in lobbies that you host from seeing any cosmetics.");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
 
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);

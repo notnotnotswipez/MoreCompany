@@ -28,7 +28,7 @@ namespace MoreCompany
             // LC_API compatibility.
             if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("LC_API"))
             {
-	            __instance.gameVersionNum = 9999;
+	            __instance.gameVersionNum = 9950 + originalVersion;
             }
         }
     }

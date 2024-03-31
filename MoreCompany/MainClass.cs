@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -27,10 +28,15 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
-        public static int newPlayerCount = 32;
+        public static int defaultPlayerCount = 32;
         public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
-        public static bool showCosmetics = true;
+        public static int newPlayerCount = 32;
+
+        public static ConfigFile StaticConfig;
+        public static ConfigEntry<int> playerCount;
+        public static ConfigEntry<bool> cosmeticsSyncOther;
+        public static ConfigEntry<bool> defaultCosmetics;
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
@@ -45,16 +51,19 @@ namespace MoreCompany
 
         public static Dictionary<int, List<string>> playerIdsAndCosmetics = new Dictionary<int, List<string>>();
 
-        public static string cosmeticSavePath = Application.persistentDataPath + "/morecompanycosmetics.txt";
-        public static string moreCompanySave = Application.persistentDataPath + "/morecompanysave.txt";
-
-        public static string dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+        public static string dynamicCosmeticsPath;
+        public static string cosmeticSavePath;
 
         private void Awake()
         {
             StaticLogger = Logger;
-            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
+            StaticConfig = Config;
 
+            playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
+            cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
+            defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
+
+            Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
             {
                 harmony.PatchAll();
@@ -76,25 +85,33 @@ namespace MoreCompany
                 newPlayerCount = lobby.MaxMembers;
             };
 
+            StaticLogger.LogInfo("Loading SETTINGS...");
+            ReadSettingsFromFile();
+
+            dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
+            cosmeticSavePath = Paths.BepInExRootPath + "/MCCosmeticsSave.log";
+
             StaticLogger.LogInfo("Checking: " + dynamicCosmeticsPath);
             if (!Directory.Exists(dynamicCosmeticsPath))
             {
                 StaticLogger.LogInfo("Creating cosmetics directory");
                 Directory.CreateDirectory(dynamicCosmeticsPath);
             }
-
-            ReadSettingsFromFile();
+            StaticLogger.LogInfo("Loading COSMETICS...");
             ReadCosmeticsFromFile();
-            StaticLogger.LogInfo("Read settings and cosmetics");
 
-            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
-            AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
-            CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
-            cosmeticsBundle.Unload(false);
+            if (defaultCosmetics.Value)
+            {
+                StaticLogger.LogInfo("Loading DEFAULT COSMETICS...");
+                AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
+                CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
+                cosmeticsBundle.Unload(false);
+            }
 
             StaticLogger.LogInfo("Loading USER COSMETICS...");
             RecursiveCosmeticLoad(Paths.PluginPath);
 
+            AssetBundle bundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.assets", Assembly.GetExecutingAssembly());
             LoadAssets(bundle);
 
             StaticLogger.LogInfo("Loaded MoreCompany FULLY");
@@ -142,28 +159,21 @@ namespace MoreCompany
 
         public static void SaveSettingsToFile()
         {
-            string built = "";
-            built += newPlayerCount + "\n";
-            built += showCosmetics + "\n";
-            System.IO.File.WriteAllText(moreCompanySave, built);
+            playerCount.Value = newPlayerCount;
+            StaticConfig.Save();
         }
 
         public static void ReadSettingsFromFile()
         {
-            if (System.IO.File.Exists(moreCompanySave))
+            try
             {
-                string[] lines = System.IO.File.ReadAllLines(moreCompanySave);
-                try
-                {
-                    newPlayerCount = Mathf.Clamp(int.Parse(lines[0]), minPlayerCount, maxPlayerCount);
-                    showCosmetics = bool.Parse(lines[1]);
-                }
-                catch (Exception e)
-                {
-                    StaticLogger.LogError("Failed to read settings from file, resetting to default");
-                    newPlayerCount = 32;
-                    showCosmetics = true;
-                }
+                newPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
+            }
+            catch
+            {
+                newPlayerCount = defaultPlayerCount;
+                playerCount.Value = newPlayerCount;
+                StaticConfig.Save();
             }
         }
 
@@ -187,7 +197,6 @@ namespace MoreCompany
             if (round.allPlayerObjects.Length != newPlayerCount)
             {
                 StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
-                playerIdsAndCosmetics.Clear();
                 uint starting = 10000;
 
                 int originalLength = round.allPlayerObjects.Length;
@@ -297,6 +306,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SendNewPlayerValuesServerRpcPatch failed to replace newPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -307,10 +318,12 @@ namespace MoreCompany
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
+            int alreadyReplaced = 0;
             foreach (var instruction in instructions)
             {
                 if (instruction.ToString() == "ldc.i4.4 NULL")
                 {
+                    alreadyReplaced++;
                     CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
                     newInstructions.Add(codeInstruction);
                     continue;
@@ -318,6 +331,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"SyncAllPlayerLevelsPatch failed to replace newPlayerCount: {alreadyReplaced}/2");
 
             return newInstructions.AsEnumerable();
         }
@@ -355,6 +370,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"SyncShipUnlockablesServerRpc failed to replace newPlayerCount: {alreadyReplaced}/2");
+
             return newInstructions.AsEnumerable();
         }
 
@@ -384,6 +401,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SyncShipUnlockablesClientRpc failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -426,6 +445,8 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("LobbyDataIsJoinable failed to replace maxPlayerCount");
+
             return newInstructions.AsEnumerable();
         }
     }
@@ -467,6 +488,8 @@ namespace MoreCompany
 
                 newInstructions.Add(instruction);
             }
+
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace newPlayerCount");
 
             return newInstructions.AsEnumerable();
         }

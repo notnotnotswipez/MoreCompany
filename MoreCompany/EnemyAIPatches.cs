@@ -194,4 +194,29 @@ namespace MoreCompany
             return newInstructions.AsEnumerable();
         }
     }
+
+    [HarmonyPatch(typeof(ButlerEnemyAI), "Start")]
+    public static class ButlerEnemyAIPatch
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            int alreadyReplaced = 0;
+            foreach (var instruction in instructions)
+            {
+                if (instruction.ToString() == "ldc.i4.4 NULL")
+                {
+                    alreadyReplaced++;
+                    CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                    newInstructions.Add(codeInstruction);
+                    continue;
+                }
+
+                newInstructions.Add(instruction);
+            }
+
+            if (alreadyReplaced != 3) MainClass.StaticLogger.LogWarning($"ButlerEnemyAIPatch failed to replace newPlayerCount: {alreadyReplaced}/3");
+            return newInstructions.AsEnumerable();
+        }
+    }
 }

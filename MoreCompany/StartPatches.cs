@@ -28,10 +28,8 @@ namespace MoreCompany
                 __instance.playerVoiceVolumes[i] = 0.5f;
 				if (!__instance.playerVoiceMixers[i])
 				{
-                    AudioMixerGroup newAudioMixerGroup = GameObject.Instantiate(audioMixerGroup);
-                    newAudioMixerGroup.name = $"VoicePlayer{i}";
-                    __instance.playerVoiceMixers[i] = newAudioMixerGroup;
-				}
+                    __instance.playerVoiceMixers[i] = audioMixerGroup;
+                }
             }
         }
     }

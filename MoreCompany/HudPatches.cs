@@ -179,7 +179,7 @@ namespace MoreCompany
     [HarmonyPatch(typeof(QuickMenuManager), "Start")]
 	public static class QuickmenuVisualInjectPatch
 	{
-        public static GameObject quickMenuScrollInstance;
+        public static GameObject quickMenuScrollInstance = null;
 
         public static void Postfix(QuickMenuManager __instance)
         {
@@ -195,17 +195,26 @@ namespace MoreCompany
 
         public static void PopulateQuickMenu(QuickMenuManager __instance)
         {
-            int childCount = quickMenuScrollInstance.transform.Find("Holder").childCount;
-
+            if (quickMenuScrollInstance == null)
+            {
+                return;
+            }
+            Transform quickMenuScrollHolder = quickMenuScrollInstance.transform.Find("Holder");
+            if (quickMenuScrollHolder == null)
+            {
+                return;
+            }
             List<GameObject> toDestroy = new List<GameObject>();
+            int childCount = quickMenuScrollHolder.childCount;
             for (int i = 0; i < childCount; i++)
             {
-                toDestroy.Add(quickMenuScrollInstance.transform.Find("Holder").GetChild(i).gameObject);
+                toDestroy.Add(quickMenuScrollHolder.GetChild(i).gameObject);
             }
             foreach (var gameObject in toDestroy)
             {
                 GameObject.Destroy(gameObject);
             }
+
             if (!StartOfRound.Instance)
             {
                 return;
@@ -216,7 +225,7 @@ namespace MoreCompany
                 PlayerControllerB playerScript = StartOfRound.Instance.allPlayerScripts[i];
                 if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
                 {
-                    GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollInstance.transform.Find("Holder"));
+                    GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollHolder);
                     RectTransform playerTransform = spawnedPlayer.GetComponent<RectTransform>();
                     playerTransform.localScale = Vector3.one;
                     playerTransform.localPosition = new Vector3(0, -playerTransform.localPosition.y, 0);
@@ -233,20 +242,12 @@ namespace MoreCompany
                             float num = (f / playerVolume.maxValue) + 1f;
                             if (num <= -1f)
                             {
-                                SoundManager.Instance.playerVoiceVolumes[finalIndex] = -70f;
+                                num = -70f;
                             }
-                            else
-                            {
-                                SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
-                            }
+                            SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
                         }
                     });
-
-                    if (StartOfRound.Instance.localPlayerController != null && StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
-                    {
-                        playerVolume.gameObject.SetActive(false);
-                        spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);
-                    }
+                    playerVolume.value = Math.Clamp((SoundManager.Instance.playerVoiceVolumes[i] - 1) * playerVolume.maxValue, playerVolume.minValue, playerVolume.maxValue);
 
                     Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
                     kickButton.onClick.AddListener(() =>
@@ -254,7 +255,14 @@ namespace MoreCompany
                         __instance.KickUserFromServer(finalIndex);
                     });
 
-                    if (!GameNetworkManager.Instance.isHostingGame)
+                    if (StartOfRound.Instance.localPlayerController != null && StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
+                    {
+                        playerVolume.gameObject.SetActive(false);
+                        spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);
+
+                        kickButton.gameObject.SetActive(false);
+                    }
+                    else if (!GameNetworkManager.Instance.isHostingGame)
                     {
                         kickButton.gameObject.SetActive(false);
                     }
@@ -266,9 +274,6 @@ namespace MoreCompany
                         {
                             return;
                         }
-
-                        // There seems to be an issue with SteamFriends.OpenUserOverlay. It works technically, but it personally locked my game up. I couldn't exit
-                        // The overlay. I'm not sure if this is a bug with the game or with SteamFriends.OpenUserOverlay, but I'm going to disable it for now.
 
                         SteamFriends.OpenUserOverlay(playerScript.playerSteamId, "steamid");
                     });

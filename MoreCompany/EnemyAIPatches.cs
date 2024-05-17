@@ -146,24 +146,20 @@ namespace MoreCompany
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
-            bool alreadyReplaced = false;
+            int alreadyReplaced = 0;
             foreach (var instruction in instructions)
             {
-				if (!alreadyReplaced)
-				{
-					if (instruction.ToString() == "ldc.i4.4 NULL")
-					{
-						alreadyReplaced = true;
-						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-						newInstructions.Add(codeInstruction);
-                        continue;
-					}
+				if (instruction.opcode == OpCodes.Ldc_I4_4)
+                {
+                    alreadyReplaced++;
+                    instruction.opcode = OpCodes.Ldsfld;
+                    instruction.operand = AccessTools.Field(typeof(MainClass), "newPlayerCount");
 				}
 
-				newInstructions.Add(instruction);
+                newInstructions.Add(instruction);
             }
 
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("GetAllPlayersInLineOfSightPatch failed to replace newPlayerCount");
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"GetAllPlayersInLineOfSightPatch failed to replace newPlayerCount: {alreadyReplaced}/2");
 
             return newInstructions.AsEnumerable();
         }

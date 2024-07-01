@@ -10,6 +10,8 @@ namespace MoreCompany
     {
         public static bool Prefix(string name, float value)
         {
+            if (MainClass.newPlayerCount <= 4 && name.StartsWith("PlayerPitch")) return true;
+
             if (name.StartsWith("PlayerVolume") || name.StartsWith("PlayerPitch"))
             {
                 string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");

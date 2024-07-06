@@ -29,9 +29,10 @@ namespace MoreCompany
     public class MainClass : BaseUnityPlugin
     {
         public static int defaultPlayerCount = 32;
-        public static int minPlayerCount = 4;
-        public static int maxPlayerCount = 50;
-        public static int newPlayerCount = 32;
+        public static int minPlayerCount = 2;
+        public static int maxPlayerCount = 64;
+        public static int actualPlayerCount = defaultPlayerCount;
+        public static int newPlayerCount = actualPlayerCount;
 
         public static ConfigFile StaticConfig;
         public static ConfigEntry<int> playerCount;
@@ -79,12 +80,14 @@ namespace MoreCompany
 
             SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
             {
-                newPlayerCount = lobby.MaxMembers;
+                actualPlayerCount = lobby.MaxMembers;
+                newPlayerCount = Math.Max(4, actualPlayerCount);
             };
 
             SteamMatchmaking.OnLobbyEntered += (lobby) =>
             {
-                newPlayerCount = lobby.MaxMembers;
+                actualPlayerCount = lobby.MaxMembers;
+                newPlayerCount = Math.Max(4, actualPlayerCount);
             };
 
             StaticLogger.LogInfo("Loading SETTINGS...");
@@ -179,7 +182,7 @@ namespace MoreCompany
 
         public static void SaveSettingsToFile()
         {
-            playerCount.Value = newPlayerCount;
+            playerCount.Value = actualPlayerCount;
             StaticConfig.Save();
         }
 
@@ -187,12 +190,14 @@ namespace MoreCompany
         {
             try
             {
-                newPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
+                actualPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
+                newPlayerCount = Math.Max(4, actualPlayerCount);
             }
             catch
             {
-                newPlayerCount = defaultPlayerCount;
-                playerCount.Value = newPlayerCount;
+                actualPlayerCount = defaultPlayerCount;
+                newPlayerCount = Math.Max(4, actualPlayerCount);
+                playerCount.Value = actualPlayerCount;
                 StaticConfig.Save();
             }
         }
@@ -477,7 +482,7 @@ namespace MoreCompany
         public static void Prefix(ref int maxMembers)
         {
             MainClass.ReadSettingsFromFile();
-            maxMembers = MainClass.newPlayerCount;
+            maxMembers = MainClass.actualPlayerCount;
         }
     }
 
@@ -500,7 +505,7 @@ namespace MoreCompany
                     else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
                     {
                         alreadyReplaced = true;
-                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "actualPlayerCount"));
                         newInstructions.Add(codeInstruction);
                         continue;
                     }
@@ -509,7 +514,7 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace newPlayerCount");
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace actualPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -521,9 +526,9 @@ namespace MoreCompany
             {
                 string @string = Encoding.ASCII.GetString(request.Payload);
                 string[] array = @string.Split(",");
-                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.newPlayerCount.ToString()))
+                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.actualPlayerCount.ToString()))
                 {
-                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {array[1]}";
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.actualPlayerCount}. Your size: {array[1]}";
                     response.Approved = false;
                 }
             }

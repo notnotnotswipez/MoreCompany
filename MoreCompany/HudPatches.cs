@@ -90,7 +90,7 @@ namespace MoreCompany
 
             TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
             inputField.characterLimit = 3;
-            inputField.text = MainClass.newPlayerCount.ToString();
+            inputField.text = MainClass.actualPlayerCount.ToString();
             inputFields.Add(inputField);
             inputField.onSubmit.AddListener(s => {
                 UpdateTextBox(inputField, s);
@@ -102,24 +102,25 @@ namespace MoreCompany
 
         public static void UpdateTextBox(TMP_InputField inputField, string s)
         {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
+            if (inputField.text == MainClass.actualPlayerCount.ToString())
                 return;
 
             if (int.TryParse(s, out int result))
             {
-                int originalCount = MainClass.newPlayerCount;
-                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                int originalCount = MainClass.actualPlayerCount;
+                MainClass.actualPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.newPlayerCount = Math.Max(4, MainClass.actualPlayerCount);
                 foreach (TMP_InputField field in inputFields)
-                    field.text = MainClass.newPlayerCount.ToString();
+                    field.text = MainClass.actualPlayerCount.ToString();
                 MainClass.SaveSettingsToFile();
-                if (MainClass.newPlayerCount != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+                if (MainClass.actualPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.actualPlayerCount}");
             }
             else if (s.Length != 0)
             {
                 foreach (TMP_InputField field in inputFields)
                 {
-                    field.text = MainClass.newPlayerCount.ToString();
+                    field.text = MainClass.actualPlayerCount.ToString();
                     field.caretPosition = 1;
                 }
             }

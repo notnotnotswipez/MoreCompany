@@ -111,7 +111,7 @@ namespace MoreCompany
         {
             if (__instance.disableSteam)
             {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum.ToString() + "," + MainClass.newPlayerCount);
+                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum.ToString() + "," + MainClass.actualPlayerCount);
             }
         }
     }
@@ -146,9 +146,10 @@ namespace MoreCompany
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {
-                MainClass.newPlayerCount = Mathf.Clamp(crewSizeMismatch, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.actualPlayerCount = Mathf.Clamp(crewSizeMismatch, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
 
-                if (MainClass.newPlayerCount == crewSizeMismatch)
+                if (MainClass.actualPlayerCount == crewSizeMismatch)
                 {
                     GameObject.Find("MenuManager").GetComponent<MenuManager>().menuNotification.SetActive(false);
 

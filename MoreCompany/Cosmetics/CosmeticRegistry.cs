@@ -10,7 +10,7 @@ namespace MoreCompany.Cosmetics
     {
         public static Dictionary<string, CosmeticInstance> cosmeticInstances = new Dictionary<string, CosmeticInstance>();
         
-        public static GameObject cosmeticGUI;
+        public static Transform cosmeticGUIGlobalScale;
         private static GameObject displayGuy;
         private static CosmeticApplication cosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
@@ -68,18 +68,30 @@ namespace MoreCompany.Cosmetics
             }
         }
 
-        public static void SpawnCosmeticGUI()
+        public static void SpawnCosmeticGUI(bool mainMenu)
         {
-            cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
-            cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").transform.localScale = new Vector3(2, 2, 2);
+            GameObject cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
+
+            cosmeticGUIGlobalScale = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale");
+
+            if (mainMenu)
+            {
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(2, 2, 2);
+            }
+            else
+            {
+                cosmeticGUIGlobalScale.transform.parent = GameObject.Find("Systems/UI/Canvas/").transform;
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+                GameObject.Destroy(cosmeticGUI);
+            }
             
-            displayGuy = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("ObjectHolder")
+            displayGuy = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder")
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
             cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
             
-            GameObject enableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("EnableButton").gameObject;
-            GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
+            GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
+            GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
             enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
                 MainClass.cosmeticsSyncOther.Value = true;
@@ -99,7 +111,7 @@ namespace MoreCompany.Cosmetics
 
         public static void PopulateCosmetics()
         {
-            GameObject contentHolder = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("CosmeticsHolder")
+            GameObject contentHolder = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("CosmeticsHolder")
                 .Find("Content").gameObject;
             
             List<Transform> children = new List<Transform>();
@@ -161,8 +173,7 @@ namespace MoreCompany.Cosmetics
         
         private static Color HexToColor(string hex)
         {
-            Color color = new Color();
-            ColorUtility.TryParseHtmlString(hex, out color);
+            ColorUtility.TryParseHtmlString(hex, out Color color);
             return color;
         }
 
@@ -177,6 +188,7 @@ namespace MoreCompany.Cosmetics
             foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
             {
                 RecursiveLayerChange(cosmeticSpawned.transform, 5);
+                cosmeticSpawned.transform.localScale *= COSMETIC_PLAYER_SCALE_MULT;
             }
         }
         

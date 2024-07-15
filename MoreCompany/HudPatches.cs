@@ -64,7 +64,7 @@ namespace MoreCompany
                     }
                 }
 
-                CosmeticRegistry.SpawnCosmeticGUI();
+                CosmeticRegistry.SpawnCosmeticGUI(true);
 
                 // Add the crew count input
                 LANMenu.InitializeMenu();
@@ -191,6 +191,8 @@ namespace MoreCompany
             rectTransform.localScale = Vector3.one;
 
             quickMenuScrollInstance = spawnedQuickmenu;
+
+            CosmeticRegistry.SpawnCosmeticGUI(false);
         }
 
         public static void PopulateQuickMenu(QuickMenuManager __instance)

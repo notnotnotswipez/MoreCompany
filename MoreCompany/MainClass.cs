@@ -35,6 +35,7 @@ namespace MoreCompany
 
         public static ConfigFile StaticConfig;
         public static ConfigEntry<int> playerCount;
+        public static ConfigEntry<bool> cosmeticsDeadBodies;
         public static ConfigEntry<bool> cosmeticsSyncOther;
         public static ConfigEntry<bool> defaultCosmetics;
         public static ConfigEntry<bool> cosmeticsPerProfile;
@@ -62,6 +63,7 @@ namespace MoreCompany
 
             playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
+            cosmeticsDeadBodies = StaticConfig.Bind("Cosmetics", "Show On Dead Bodies", true, "Should you be able to see cosmetics on dead bodies?");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
 

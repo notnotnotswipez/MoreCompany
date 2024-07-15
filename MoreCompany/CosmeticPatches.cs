@@ -41,13 +41,16 @@ namespace MoreCompany
 
         [HarmonyPatch(typeof(PlayerControllerB), "SpawnDeadBody")]
         [HarmonyPostfix]
-        public static void Postfix(ref PlayerControllerB __instance, int playerId, Vector3 bodyVelocity, int causeOfDeath, PlayerControllerB deadPlayerController, int deathAnimation = 0, Transform overridePosition = null, Vector3 positionOffset = default(Vector3))
+        public static void SpawnDeadBody(ref PlayerControllerB __instance, int deathAnimation = 0)
         {
             Transform cosmeticRoot = __instance.deadBody.transform;
             if (cosmeticRoot == null) return;
             bool detachedHead = __instance.deadBody.detachedHead;
             if (deathAnimation == 4 || deathAnimation == 5) detachedHead = true; // Masked
             CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.playerClientId, detachedHead: detachedHead);
+
+            //GameNetcodeStuff.PlayerControllerB __instance = StartOfRound.Instance.localPlayerController;
+            //__instance.SpawnDeadBody((int)__instance.playerClientId, new UnityEngine.Vector3(0f, 0f, 0f), 0, __instance, 1);
         }
 
         // "Why this function? Why not Start/Awake/Another function?" Well, Start and Awake are called on clients that arent the host before the mimicking player is set.

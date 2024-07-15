@@ -6,6 +6,8 @@ namespace MoreCompany.Cosmetics
 {
     public class CosmeticApplication : MonoBehaviour
     {
+        public bool detachedHead = false;
+
         public Transform head;
         public Transform hip;
         public Transform lowerArmRight;
@@ -16,12 +18,13 @@ namespace MoreCompany.Cosmetics
 
         public void Awake()
         {
-            head = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
-            chest = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003");
-            lowerArmRight = transform.Find("spine").Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
-            hip = transform.Find("spine");
-            shinLeft = transform.Find("spine").Find("thigh.L").Find("shin.L");
-            shinRight = transform.Find("spine").Find("thigh.R").Find("shin.R");
+            Transform spine = transform.Find("spine") ?? transform;
+            head = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
+            chest = spine.Find("spine.001").Find("spine.002").Find("spine.003");
+            lowerArmRight = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
+            hip = spine;
+            shinLeft = spine.Find("thigh.L").Find("shin.L");
+            shinRight = spine.Find("thigh.R").Find("shin.R");
 
             RefreshAllCosmeticPositions();
         }
@@ -56,6 +59,11 @@ namespace MoreCompany.Cosmetics
             if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmeticId))
             {
                 CosmeticInstance cosmeticInstance = CosmeticRegistry.cosmeticInstances[cosmeticId];
+                if (startEnabled && cosmeticInstance != null)
+                {
+                    if (cosmeticInstance.cosmeticType == CosmeticType.HAT && detachedHead) return;
+                }
+
                 GameObject cosmeticInstanceGameObject = GameObject.Instantiate(cosmeticInstance.gameObject);
                 cosmeticInstanceGameObject.SetActive(startEnabled);
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstanceGameObject.GetComponent<CosmeticInstance>();
@@ -99,7 +107,13 @@ namespace MoreCompany.Cosmetics
                     targetTransform = chest;
                     break;
             }
-            
+
+            if (targetTransform == null)
+            {
+                MainClass.StaticLogger.LogError("Failed to find transform of type: " + cosmeticInstance.cosmeticType);
+                return;
+            }
+
             cosmeticInstance.transform.position = targetTransform.position;
             cosmeticInstance.transform.rotation = targetTransform.rotation;
             cosmeticInstance.transform.parent = targetTransform;

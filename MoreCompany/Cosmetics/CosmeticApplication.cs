@@ -59,10 +59,8 @@ namespace MoreCompany.Cosmetics
             if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmeticId))
             {
                 CosmeticInstance cosmeticInstance = CosmeticRegistry.cosmeticInstances[cosmeticId];
-                if (startEnabled && cosmeticInstance != null)
-                {
-                    if (cosmeticInstance.cosmeticType == CosmeticType.HAT && detachedHead) return;
-                }
+
+                if (startEnabled && cosmeticInstance.cosmeticType == CosmeticType.HAT && detachedHead) return;
 
                 GameObject cosmeticInstanceGameObject = GameObject.Instantiate(cosmeticInstance.gameObject);
                 cosmeticInstanceGameObject.SetActive(startEnabled);

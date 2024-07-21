@@ -41,13 +41,11 @@ namespace MoreCompany
             Client
         }
 
-        [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
-        [HarmonyPostfix]
-        public static void ConnectClientToPlayerObject_Postfix(PlayerControllerB __instance)
+        public static void SyncCosmeticsToOtherPlayers(PlayerControllerB player)
         {
-            MainClass.playerIdsAndCosmetics.Clear();
+            if (StartOfRound.Instance == null) return;
 
-            string built = $"[morecompanycosmetics];{__instance.playerClientId};-1";
+            string built = $"[morecompanycosmetics];{player.playerClientId};-1";
             foreach (var cosmetic in CosmeticRegistry.locallySelectedCosmetics)
             {
                 if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmetic))
@@ -56,6 +54,14 @@ namespace MoreCompany
                 }
             }
             AddTextMessageServerRpc?.Invoke(HUDManager.Instance, new object[] { built });
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        [HarmonyPostfix]
+        public static void ConnectClientToPlayerObject_Postfix(PlayerControllerB __instance)
+        {
+            MainClass.playerIdsAndCosmetics.Clear();
+            SyncCosmeticsToOtherPlayers(__instance);
         }
 
         [HarmonyPatch(typeof(HUDManager), "AddTextMessageServerRpc")]

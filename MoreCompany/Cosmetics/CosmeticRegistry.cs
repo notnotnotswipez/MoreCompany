@@ -205,7 +205,7 @@ namespace MoreCompany.Cosmetics
         {
             return locallySelectedCosmetics.Contains(cosmeticId);
         }
-        
+
         public static void ToggleCosmetic(string cosmeticId)
         {
             if (locallySelectedCosmetics.Contains(cosmeticId))
@@ -215,6 +215,11 @@ namespace MoreCompany.Cosmetics
             else
             {
                 locallySelectedCosmetics.Add(cosmeticId);
+            }
+
+            if (StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
+            {
+                ClientReceiveMessagePatch.SyncCosmeticsToOtherPlayers(StartOfRound.Instance.localPlayerController);
             }
         }
     }

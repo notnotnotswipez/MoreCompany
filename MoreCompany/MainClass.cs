@@ -558,6 +558,7 @@ namespace MoreCompany
         private static void OnPlayerConnectedClientRpc(StartOfRound __instance, ulong clientId, int connectedPlayers, ulong[] connectedPlayerIdsOrdered, int assignedPlayerObjectId, int serverMoneyAmount, int levelID, int profitQuota, int timeUntilDeadline, int quotaFulfilled, int randomSeed, bool isChallenge)
         {
             __instance.allPlayerScripts[assignedPlayerObjectId].gameObject.SetActive(true);
+            SoundManager.Instance.playerVoiceVolumes[assignedPlayerObjectId] = SoundManagerPatch.defaultPlayerVolume;
         }
 
         [HarmonyPatch(typeof(StartOfRound), "OnPlayerDC")]

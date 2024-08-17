@@ -8,33 +8,37 @@ namespace MoreCompany
     [HarmonyPatch(typeof(AudioMixer), "SetFloat")]
     public static class AudioMixerSetFloatPatch
     {
-        public static bool Prefix(string name, float value)
+        public static bool Prefix(string name, ref float value)
         {
-            if (MainClass.newPlayerCount <= 4 && name.StartsWith("PlayerPitch")) return true;
-
-            if (name.StartsWith("PlayerVolume") || name.StartsWith("PlayerPitch"))
+            if (name.StartsWith("PlayerVolume"))
             {
-                string cutName = name.Replace("PlayerVolume", "").Replace("PlayerPitch", "");
+                string cutName = name.Replace("PlayerVolume", "");
                 int playerObjectNumber = int.Parse(cutName);
 
+                // Set the vanilla diageticMixer volumes for all player controllers to max
+                if (!SoundManagerPatch.initialVolumeSet)
+                {
+                    MainClass.StaticLogger.LogInfo($"Setting initial volume for {playerObjectNumber} to {value}");
+                    return true;
+                }
+
+                // Update the actual volume of the voice source since each player doesn't have it's own diagetic mixer group
                 PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerObjectNumber];
                 if (playerControllerB != null)
                 {
                     AudioSource voiceSource = playerControllerB.currentVoiceChatAudioSource;
                     if (voiceSource)
                     {
-                        if (name.StartsWith("PlayerVolume"))
-                        {
-                            voiceSource.volume = value / 16;
-                        }
-                        else if (name.StartsWith("PlayerPitch"))
-                        {
-                            voiceSource.pitch = value;
-                        }
+                        voiceSource.volume = value / 16;
                     }
-
-                    return false;
                 }
+
+                return false;
+            }
+            else if (name.StartsWith("PlayerPitch"))
+            {
+                // Use vanilla pitch if max crew size <= 4 otherwise don't do any further logic
+                return MainClass.newPlayerCount <= 4;
             }
 
             return true;

@@ -215,4 +215,29 @@ namespace MoreCompany
             return newInstructions.AsEnumerable();
         }
     }
+
+    [HarmonyPatch(typeof(CaveDwellerAI), "GetAllPlayerBodiesInLineOfSight")]
+    public static class GetAllPlayerBodiesInLineOfSightPatch
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            int alreadyReplaced = 0;
+            foreach (var instruction in instructions)
+            {
+                if (instruction.opcode == OpCodes.Ldc_I4_4)
+                {
+                    alreadyReplaced++;
+                    instruction.opcode = OpCodes.Ldsfld;
+                    instruction.operand = AccessTools.Field(typeof(MainClass), "newPlayerCount");
+                }
+
+                newInstructions.Add(instruction);
+            }
+
+            if (alreadyReplaced != 2) MainClass.StaticLogger.LogWarning($"GetAllPlayerBodiesInLineOfSightPatch failed to replace newPlayerCount: {alreadyReplaced}/2");
+
+            return newInstructions.AsEnumerable();
+        }
+    }
 }

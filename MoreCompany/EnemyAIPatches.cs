@@ -77,40 +77,6 @@ namespace MoreCompany
         }
     }
 
-	[HarmonyPatch(typeof(SpringManAI), "DoAIInterval")]
-	public static class SpringManAIIntervalPatch
-	{
-        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var newInstructions = new List<CodeInstruction>();
-            bool foundCount = false;
-            bool alreadyReplaced = false;
-            foreach (var instruction in instructions)
-            {
-				if (!alreadyReplaced)
-				{
-					if (!foundCount && instruction.ToString() == "call void EnemyAI::SwitchToBehaviourState(int stateIndex)")
-					{
-						foundCount = true;
-					}
-					else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
-					{
-						alreadyReplaced = true;
-						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-						newInstructions.Add(codeInstruction);
-                        continue;
-					}
-				}
-
-				newInstructions.Add(instruction);
-            }
-
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("SpringManAIIntervalPatch failed to replace newPlayerCount");
-
-            return newInstructions.AsEnumerable();
-        }
-	}
-
 	[HarmonyPatch(typeof(EnemyAI), "GetClosestPlayer")]
 	public static class GetClosestPlayerPatch
     {

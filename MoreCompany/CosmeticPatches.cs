@@ -62,31 +62,9 @@ namespace MoreCompany
             if (MainClass.cosmeticsMaskedEnemy.Value && __instance.mimickingPlayer != null)
             {
                 Transform cosmeticRoot = __instance.transform.Find("ScavengerModel").Find("metarig");
-                bool maskVisible = __instance.maskTypes.Any(x => x.GetComponentInChildren<MeshRenderer>().enabled);
-                CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.mimickingPlayer.playerClientId, detachedHead: maskVisible);
+                CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.mimickingPlayer.playerClientId, detachedHead: false);
                 __instance.skinnedMeshRenderers = __instance.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                 __instance.meshRenderers = __instance.gameObject.GetComponentsInChildren<MeshRenderer>();
-            }
-        }
-
-        [HarmonyPatch(typeof(MaskedPlayerEnemy), "SetMaskType")]
-        [HarmonyPostfix]
-        public static void SetMaskType(MaskedPlayerEnemy __instance)
-        {
-            if (MainClass.cosmeticsMaskedEnemy.Value && __instance.mimickingPlayer != null)
-            {
-                Transform cosmeticRoot = __instance.transform.Find("ScavengerModel").Find("metarig");
-                CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
-                if (cosmeticApplication)
-                {
-                    bool maskVisible = __instance.maskTypes.Any(x => x.GetComponentInChildren<MeshRenderer>().enabled);
-                    if (cosmeticApplication.detachedHead != maskVisible)
-                    {
-                        CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.mimickingPlayer.playerClientId, detachedHead: maskVisible);
-                        __instance.skinnedMeshRenderers = __instance.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
-                        __instance.meshRenderers = __instance.gameObject.GetComponentsInChildren<MeshRenderer>();
-                    }
-                }
             }
         }
     }

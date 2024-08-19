@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GameNetcodeStuff;
 using HarmonyLib;
 using MoreCompany.Cosmetics;
@@ -56,12 +57,12 @@ namespace MoreCompany
         // And the other functions are called before the mimicking player is set... sometimes. This is the only function that gets called after the mimicking player is set on the client and host consistently.
         [HarmonyPatch(typeof(MaskedPlayerEnemy), "SetEnemyOutside")]
         [HarmonyPostfix]
-        public static void SetEnemyOutside(ref MaskedPlayerEnemy __instance)
+        public static void SetEnemyOutside(MaskedPlayerEnemy __instance)
         {
-            if (__instance.mimickingPlayer != null)
+            if (MainClass.cosmeticsMaskedEnemy.Value && __instance.mimickingPlayer != null)
             {
                 Transform cosmeticRoot = __instance.transform.Find("ScavengerModel").Find("metarig");
-                CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.mimickingPlayer.playerClientId, detachedHead: true);
+                CloneCosmeticsToNonPlayer(cosmeticRoot, (int)__instance.mimickingPlayer.playerClientId, detachedHead: false);
                 __instance.skinnedMeshRenderers = __instance.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                 __instance.meshRenderers = __instance.gameObject.GetComponentsInChildren<MeshRenderer>();
             }

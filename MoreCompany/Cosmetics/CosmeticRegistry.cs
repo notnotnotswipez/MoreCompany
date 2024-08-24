@@ -70,6 +70,8 @@ namespace MoreCompany.Cosmetics
 
         public static void SpawnCosmeticGUI()
         {
+            if (cosmeticInstances.Count == 0) return; // Don't spawn the ui if no cosmetics are loaded
+
             cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
             cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").transform.localScale = new Vector3(2, 2, 2);
             

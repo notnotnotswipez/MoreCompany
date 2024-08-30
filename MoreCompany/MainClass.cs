@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using GameNetcodeStuff;
@@ -139,6 +140,11 @@ namespace MoreCompany
             LoadAssets(bundle);
 
             StaticLogger.LogInfo("Loaded MoreCompany FULLY");
+
+            if (Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                Compatibility.LobbyCompatibility.Init();
+            }
         }
 
         private void RecursiveCosmeticLoad(string directory)

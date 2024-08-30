@@ -42,6 +42,7 @@
   <!-- Development dependencies (set 'PrivateAsssets="all"') -->
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
+    <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.*" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Runtime dependencies (common) -->
@@ -80,7 +81,7 @@
 
   <!-- Runtime dependencies (CI) -->
   <ItemGroup Condition="$(CI) == 'true'">
-    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />
+    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="62.0.1-ngd.0" />
   </ItemGroup>
 
   <!-- prevent referenced assemblies from being copied to output folders -->

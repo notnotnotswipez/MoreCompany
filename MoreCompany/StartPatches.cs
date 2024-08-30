@@ -8,11 +8,25 @@ using OpCodes = System.Reflection.Emit.OpCodes;
 
 namespace MoreCompany
 {
-    [HarmonyPatch(typeof(SoundManager), "Start")]
-    public static class SoundManagerStartPatch
+    [HarmonyPatch]
+    public static class SoundManagerPatch
     {
-        public static void Postfix(ref SoundManager __instance)
+        internal const float defaultPlayerVolume = 0.5f;
+        internal static bool initialVolumeSet = false;
+
+        [HarmonyPatch(typeof(SoundManager), "Start")]
+        [HarmonyPostfix]
+        public static void SM_Start(ref SoundManager __instance)
         {
+            // Set the vanilla diageticMixer volumes for all player controllers to max
+            initialVolumeSet = false;
+            float defaultVolume = 16f;
+            __instance.diageticMixer.SetFloat("PlayerVolume0", defaultVolume);
+            __instance.diageticMixer.SetFloat("PlayerVolume1", defaultVolume);
+            __instance.diageticMixer.SetFloat("PlayerVolume2", defaultVolume);
+            __instance.diageticMixer.SetFloat("PlayerVolume3", defaultVolume);
+            initialVolumeSet = true;
+
             Array.Resize(ref __instance.playerVoicePitchLerpSpeed, MainClass.newPlayerCount);
             Array.Resize(ref __instance.playerVoicePitchTargets, MainClass.newPlayerCount);
             Array.Resize(ref __instance.playerVoicePitches, MainClass.newPlayerCount);
@@ -25,7 +39,7 @@ namespace MoreCompany
                 __instance.playerVoicePitchLerpSpeed[i] = 3f;
                 __instance.playerVoicePitchTargets[i] = 1f;
                 __instance.playerVoicePitches[i] = 1f;
-                __instance.playerVoiceVolumes[i] = 0.5f;
+                __instance.playerVoiceVolumes[i] = defaultPlayerVolume;
 				if (!__instance.playerVoiceMixers[i])
 				{
                     __instance.playerVoiceMixers[i] = audioMixerGroup;

@@ -1,21 +1,9 @@
 using HarmonyLib;
+using System.Collections;
 using UnityEngine;
 
 namespace MoreCompany
 {
-    [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter", MethodType.Enumerator)]
-    public static class LoadLobbyListAndFilterPatch
-    {
-        private static void Postfix()
-        {
-            LobbySlot[] lobbySlots = Object.FindObjectsOfType<LobbySlot>();
-            foreach (LobbySlot lobbySlot in lobbySlots)
-            {
-                lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(GameNetworkManager), "Awake")]
     public static class GameNetworkAwakePatch
     {
@@ -41,6 +29,22 @@ namespace MoreCompany
             if (GameNetworkManager.Instance != null && __instance.versionNumberText != null)
             {
                 __instance.versionNumberText.text = string.Format("v{0} (MC)", GameNetworkAwakePatch.originalVersion);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
+    public static class LoadLobbyListAndFilterPatch
+    {
+        public static IEnumerator Postfix(IEnumerator result)
+        {
+            while (result.MoveNext())
+                yield return result.Current;
+
+            LobbySlot[] lobbySlots = Object.FindObjectsOfType<LobbySlot>();
+            foreach (LobbySlot lobbySlot in lobbySlots)
+            {
+                lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
             }
         }
     }

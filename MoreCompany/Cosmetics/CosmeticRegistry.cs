@@ -14,10 +14,9 @@ namespace MoreCompany.Cosmetics
         private static GameObject displayGuy;
         private static CosmeticApplication cosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
-        internal static bool menuIsInGame = false;
+        public static bool menuIsInGame = false;
 
         public const float COSMETIC_PLAYER_SCALE_MULT = 0.38f;
-        public const float COSMETIC_GUY_SCALE_MULT_INGAME = 0.33f;
 
         public static void LoadCosmeticsFromBundle(AssetBundle bundle)
         {

@@ -21,7 +21,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.9.1";
+        public const string PLUGIN_VERSION = "1.10.0";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -36,6 +36,7 @@ namespace MoreCompany
         public static ConfigFile StaticConfig;
         public static ConfigEntry<int> playerCount;
         public static ConfigEntry<bool> cosmeticsDeadBodies;
+        public static ConfigEntry<bool> cosmeticsMaskedEnemy;
         public static ConfigEntry<bool> cosmeticsSyncOther;
         public static ConfigEntry<bool> defaultCosmetics;
         public static ConfigEntry<bool> cosmeticsPerProfile;
@@ -64,6 +65,7 @@ namespace MoreCompany
             playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
             cosmeticsDeadBodies = StaticConfig.Bind("Cosmetics", "Show On Dead Bodies", true, "Should you be able to see cosmetics on dead bodies?");
+            cosmeticsMaskedEnemy = StaticConfig.Bind("Cosmetics", "Show On Masked Enemy", true, "Should you be able to see cosmetics on the masked enemy?");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
 
@@ -558,6 +560,7 @@ namespace MoreCompany
         private static void OnPlayerConnectedClientRpc(StartOfRound __instance, ulong clientId, int connectedPlayers, ulong[] connectedPlayerIdsOrdered, int assignedPlayerObjectId, int serverMoneyAmount, int levelID, int profitQuota, int timeUntilDeadline, int quotaFulfilled, int randomSeed, bool isChallenge)
         {
             __instance.allPlayerScripts[assignedPlayerObjectId].gameObject.SetActive(true);
+            SoundManager.Instance.playerVoiceVolumes[assignedPlayerObjectId] = SoundManagerPatch.defaultPlayerVolume;
         }
 
         [HarmonyPatch(typeof(StartOfRound), "OnPlayerDC")]

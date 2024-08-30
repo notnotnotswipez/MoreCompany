@@ -9,7 +9,7 @@ namespace MoreCompany.Cosmetics
     public class CosmeticRegistry
     {
         public static Dictionary<string, CosmeticInstance> cosmeticInstances = new Dictionary<string, CosmeticInstance>();
-        
+
         public static Transform cosmeticGUIGlobalScale;
         private static GameObject displayGuy;
         private static CosmeticApplication cosmeticApplication;
@@ -41,7 +41,7 @@ namespace MoreCompany.Cosmetics
                 cosmeticInstances.Add(cosmeticInstanceBehavior.cosmeticId, cosmeticInstanceBehavior);
             }
         }
-        
+
         public static void LoadCosmeticsFromAssembly(Assembly assembly, AssetBundle bundle)
         {
             foreach (var type in assembly.GetTypes())
@@ -70,6 +70,8 @@ namespace MoreCompany.Cosmetics
 
         public static void SpawnCosmeticGUI(bool mainMenu)
         {
+            if (cosmeticInstances.Count == 0) return; // Don't spawn the ui if no cosmetics are loaded
+
             GameObject cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
 
             cosmeticGUIGlobalScale = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale");
@@ -84,12 +86,12 @@ namespace MoreCompany.Cosmetics
                 cosmeticGUIGlobalScale.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
                 GameObject.Destroy(cosmeticGUI);
             }
-            
+
             displayGuy = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder")
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
             cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
-            
+
             GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
             GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
             enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
@@ -113,13 +115,13 @@ namespace MoreCompany.Cosmetics
         {
             GameObject contentHolder = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("CosmeticsHolder")
                 .Find("Content").gameObject;
-            
+
             List<Transform> children = new List<Transform>();
             for (int i = 0; i < contentHolder.transform.childCount; i++)
             {
                 children.Add(contentHolder.transform.GetChild(i));
             }
-            
+
             foreach (var child in children)
             {
                 GameObject.Destroy(child.gameObject);
@@ -129,10 +131,10 @@ namespace MoreCompany.Cosmetics
             {
                 GameObject spawnedCosmetic = GameObject.Instantiate(MainClass.cosmeticButton, contentHolder.transform);
                 spawnedCosmetic.transform.localScale = Vector3.one;
-                
+
                 GameObject disabledOverlay = spawnedCosmetic.transform.Find("Deselected").gameObject;
                 disabledOverlay.SetActive(true);
-                
+
                 GameObject enabledOverlay = spawnedCosmetic.transform.Find("Selected").gameObject;
                 enabledOverlay.SetActive(true);
 
@@ -149,7 +151,7 @@ namespace MoreCompany.Cosmetics
 
                 RawImage iconImage = spawnedCosmetic.transform.Find("Icon").GetComponent<RawImage>();
                 iconImage.texture = cosmeticInstance.Value.icon;
-                
+
                 Button button = spawnedCosmetic.GetComponent<Button>();
                 button.onClick.AddListener(() =>
                 {
@@ -170,7 +172,7 @@ namespace MoreCompany.Cosmetics
                 });
             }
         }
-        
+
         private static Color HexToColor(string hex)
         {
             ColorUtility.TryParseHtmlString(hex, out Color color);
@@ -191,7 +193,7 @@ namespace MoreCompany.Cosmetics
                 cosmeticSpawned.transform.localScale *= COSMETIC_PLAYER_SCALE_MULT;
             }
         }
-        
+
         private static void RecursiveLayerChange(Transform transform, int layer)
         {
             transform.gameObject.layer = layer;

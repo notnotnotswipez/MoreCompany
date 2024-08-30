@@ -67,5 +67,20 @@ namespace MoreCompany
                 __instance.meshRenderers = __instance.gameObject.GetComponentsInChildren<MeshRenderer>();
             }
         }
+
+        [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
+        [HarmonyPatch(typeof(QuickMenuManager), "CloseQuickMenu")]
+        [HarmonyPostfix]
+        public static void ToggleQuickMenu(QuickMenuManager __instance)
+        {
+            if (CosmeticRegistry.menuIsInGame && CosmeticRegistry.cosmeticGUIGlobalScale != null)
+            {
+                CosmeticRegistry.cosmeticGUIGlobalScale.Find("ActivateButton").gameObject.SetActive(__instance.isMenuOpen);
+                if (!__instance.isMenuOpen)
+                {
+                    CosmeticRegistry.cosmeticGUIGlobalScale.Find("CosmeticsScreen").gameObject.SetActive(false);
+                }
+            }
+        }
     }
 }

@@ -14,8 +14,10 @@ namespace MoreCompany.Cosmetics
         private static GameObject displayGuy;
         private static CosmeticApplication cosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
+        internal static bool menuIsInGame = false;
 
         public const float COSMETIC_PLAYER_SCALE_MULT = 0.38f;
+        public const float COSMETIC_GUY_SCALE_MULT_INGAME = 0.33f;
 
         public static void LoadCosmeticsFromBundle(AssetBundle bundle)
         {
@@ -71,20 +73,25 @@ namespace MoreCompany.Cosmetics
         public static void SpawnCosmeticGUI(bool mainMenu)
         {
             if (cosmeticInstances.Count == 0) return; // Don't spawn the ui if no cosmetics are loaded
+            menuIsInGame = !mainMenu;
 
             GameObject cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
 
             cosmeticGUIGlobalScale = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale");
 
-            if (mainMenu)
+            if (menuIsInGame)
             {
-                cosmeticGUIGlobalScale.transform.localScale = new Vector3(2, 2, 2);
+                cosmeticGUIGlobalScale.transform.parent = GameObject.Find("Systems/UI/Canvas/").transform;
+                cosmeticGUIGlobalScale.transform.localPosition = new Vector3(0.0f, 0.0f, 0.0f);
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+                GameObject.Destroy(cosmeticGUI);
+                cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder").transform.localPosition = new Vector3(210f, 0f, -100f);
+                cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder").Find("Spot Light").GetComponent<Light>().intensity = 30;
+                cosmeticGUIGlobalScale.Find("ActivateButton").gameObject.SetActive(false);
             }
             else
             {
-                cosmeticGUIGlobalScale.transform.parent = GameObject.Find("Systems/UI/Canvas/").transform;
-                cosmeticGUIGlobalScale.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
-                GameObject.Destroy(cosmeticGUI);
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(2, 2, 2);
             }
 
             displayGuy = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder")
@@ -190,7 +197,10 @@ namespace MoreCompany.Cosmetics
             foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
             {
                 RecursiveLayerChange(cosmeticSpawned.transform, 5);
-                cosmeticSpawned.transform.localScale *= COSMETIC_PLAYER_SCALE_MULT;
+                if (menuIsInGame)
+                {
+                    cosmeticSpawned.transform.localScale /= 4.3f;
+                }
             }
         }
 

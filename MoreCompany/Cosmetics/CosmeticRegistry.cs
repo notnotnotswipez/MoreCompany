@@ -221,7 +221,7 @@ namespace MoreCompany.Cosmetics
 
             if (StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
             {
-                ClientReceiveMessagePatch.SyncCosmeticsToOtherPlayers(StartOfRound.Instance.localPlayerController);
+                CosmeticSyncPatch.SyncCosmeticsToOtherClients(StartOfRound.Instance.localPlayerController);
             }
         }
     }

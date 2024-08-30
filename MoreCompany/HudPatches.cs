@@ -40,14 +40,15 @@ namespace MoreCompany
         public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
 
         public static void Postfix(MenuManager __instance)
-		{
-			try
-            {
-                MainClass.ReadSettingsFromFile();
+        {
+            MainClass.ReadSettingsFromFile();
 
-                GameObject parent = __instance.transform.parent.gameObject;
+            // Add the MoreCompany logo
+            try
+            {
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
 
+                GameObject parent = __instance.transform.parent.gameObject;
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
@@ -63,12 +64,18 @@ namespace MoreCompany
                         loadingLogo.GetComponent<Image>().sprite = logoImage;
                     }
                 }
+            }
+			catch (Exception e)
+			{
+                MainClass.StaticLogger.LogError(e);
+			}
 
-                CosmeticRegistry.SpawnCosmeticGUI();
-
-                // Add the crew count input
+            // Add the crew count input
+            try
+            {
                 LANMenu.InitializeMenu();
                 inputFields.Clear();
+                GameObject parent = __instance.transform.parent.gameObject;
                 Transform lobbyHostOptions = parent.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
                 if (lobbyHostOptions != null)
                     CreateCrewCountInput(lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
@@ -76,10 +83,12 @@ namespace MoreCompany
                 if (lobbyJoinOptions != null)
                     CreateCrewCountInput(lobbyJoinOptions.Find("LANOptions"));
             }
-			catch (Exception e)
-			{
+            catch (Exception e)
+            {
                 MainClass.StaticLogger.LogError(e);
-			}
+            }
+
+            CosmeticRegistry.SpawnCosmeticGUI();
         }
 
         private static void CreateCrewCountInput(Transform parent)

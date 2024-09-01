@@ -40,6 +40,7 @@ namespace MoreCompany
         public static ConfigEntry<bool> cosmeticsSyncOther;
         public static ConfigEntry<bool> defaultCosmetics;
         public static ConfigEntry<bool> cosmeticsPerProfile;
+        public static ConfigEntry<string> disabledCosmetics;
 
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
@@ -68,6 +69,7 @@ namespace MoreCompany
             cosmeticsMaskedEnemy = StaticConfig.Bind("Cosmetics", "Show On Masked Enemy", true, "Should you be able to see cosmetics on the masked enemy?");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
+            disabledCosmetics = StaticConfig.Bind("Cosmetics", "Disabled Cosmetics", "", "Comma separated list of cosmetics to disable");
 
             Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
             try
@@ -93,6 +95,10 @@ namespace MoreCompany
 
             StaticLogger.LogInfo("Loading SETTINGS...");
             ReadSettingsFromFile();
+
+            cosmeticsSyncOther.SettingChanged += (sender, args) => {
+                CosmeticSyncPatch.SyncCosmeticsToOtherClients(disabled: !cosmeticsSyncOther.Value);
+            };
 
             dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
 
@@ -128,7 +134,7 @@ namespace MoreCompany
             {
                 StaticLogger.LogInfo("Loading DEFAULT COSMETICS...");
                 AssetBundle cosmeticsBundle = BundleUtilities.LoadBundleFromInternalAssembly("morecompany.cosmetics", Assembly.GetExecutingAssembly());
-                CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle);
+                CosmeticRegistry.LoadCosmeticsFromBundle(cosmeticsBundle, "morecompany.cosmetics");
                 cosmeticsBundle.Unload(false);
             }
 
@@ -153,7 +159,7 @@ namespace MoreCompany
                 if (file.EndsWith(".cosmetics"))
                 {
                     AssetBundle bundle = AssetBundle.LoadFromFile(file);
-                    CosmeticRegistry.LoadCosmeticsFromBundle(bundle);
+                    CosmeticRegistry.LoadCosmeticsFromBundle(bundle, file);
                     bundle.Unload(false);
                 }
             }

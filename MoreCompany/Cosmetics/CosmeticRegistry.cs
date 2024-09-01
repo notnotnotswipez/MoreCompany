@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using MoreCompany.Utils;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace MoreCompany.Cosmetics
 
         public const float COSMETIC_PLAYER_SCALE_MULT = 0.38f;
 
-        public static void LoadCosmeticsFromBundle(AssetBundle bundle)
+        public static void LoadCosmeticsFromBundle(AssetBundle bundle, string bundleName = null)
         {
             foreach (var potentialPrefab in bundle.GetAllAssetNames())
             {
@@ -32,13 +33,20 @@ namespace MoreCompany.Cosmetics
                 {
                     continue;
                 }
-                MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle");
-                if (cosmeticInstances.ContainsKey(cosmeticInstanceBehavior.cosmeticId))
+
+                if (MainClass.disabledCosmetics.Value.Split(',').Contains(cosmeticInstanceBehavior.cosmeticId))
                 {
-                    MainClass.StaticLogger.LogError("Duplicate cosmetic id: " + cosmeticInstanceBehavior.cosmeticId);
+                    MainClass.StaticLogger.LogInfo("Skipped cosmetic: " + cosmeticInstanceBehavior.cosmeticId + ", bundle: " + bundleName + ", reason: disabled");
                     continue;
                 }
 
+                if (cosmeticInstances.ContainsKey(cosmeticInstanceBehavior.cosmeticId))
+                {
+                    MainClass.StaticLogger.LogWarning("Skipped cosmetic: " + cosmeticInstanceBehavior.cosmeticId + ", bundle: " + bundleName + ", reason: duplicate id");
+                    continue;
+                }
+
+                MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle: " + bundleName);
                 cosmeticInstances.Add(cosmeticInstanceBehavior.cosmeticId, cosmeticInstanceBehavior);
             }
         }
@@ -217,6 +225,11 @@ namespace MoreCompany.Cosmetics
             return locallySelectedCosmetics.Contains(cosmeticId);
         }
 
+        public static List<string> GetCosmeticsToSync()
+        {
+            return locallySelectedCosmetics.Where(x => cosmeticInstances.ContainsKey(x)).ToList();
+        }
+
         public static void ToggleCosmetic(string cosmeticId)
         {
             if (locallySelectedCosmetics.Contains(cosmeticId))
@@ -228,9 +241,9 @@ namespace MoreCompany.Cosmetics
                 locallySelectedCosmetics.Add(cosmeticId);
             }
 
-            if (StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
+            if (MainClass.cosmeticsSyncOther.Value && StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
             {
-                CosmeticSyncPatch.SyncCosmeticsToOtherClients(StartOfRound.Instance.localPlayerController);
+                CosmeticSyncPatch.SyncCosmeticsToOtherClients();
             }
         }
     }

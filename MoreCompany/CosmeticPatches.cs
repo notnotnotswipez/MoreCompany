@@ -12,7 +12,7 @@ namespace MoreCompany
     {
         public static bool CloneCosmeticsToNonPlayer(Transform cosmeticRoot, int playerClientId, bool detachedHead = false)
         {
-            if (MainClass.cosmeticsSyncOther.Value && MainClass.playerIdsAndCosmetics.ContainsKey(playerClientId))
+            if (MainClass.playerIdsAndCosmetics.ContainsKey(playerClientId))
             {
                 List<string> cosmetics = MainClass.playerIdsAndCosmetics[playerClientId];
                 CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
@@ -26,7 +26,10 @@ namespace MoreCompany
                 cosmeticApplication.detachedHead = detachedHead;
                 foreach (var cosmetic in cosmetics)
                 {
-                    cosmeticApplication.ApplyCosmetic(cosmetic, true);
+                    if (MainClass.cosmeticsSyncOther.Value)
+                    {
+                        cosmeticApplication.ApplyCosmetic(cosmetic, true);
+                    }
                 }
 
                 foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)

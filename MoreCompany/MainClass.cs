@@ -97,7 +97,7 @@ namespace MoreCompany
             ReadSettingsFromFile();
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
-                CosmeticSyncPatch.SyncCosmeticsToOtherClients(disabled: !cosmeticsSyncOther.Value);
+                CosmeticSyncPatch.SyncCosmeticsToOtherClients();
             };
 
             dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";

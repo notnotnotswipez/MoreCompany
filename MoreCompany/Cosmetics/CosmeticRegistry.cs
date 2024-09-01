@@ -241,7 +241,7 @@ namespace MoreCompany.Cosmetics
                 locallySelectedCosmetics.Add(cosmeticId);
             }
 
-            if (MainClass.cosmeticsSyncOther.Value && StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
+            if (StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
             {
                 CosmeticSyncPatch.SyncCosmeticsToOtherClients();
             }

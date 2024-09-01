@@ -13,7 +13,7 @@ namespace MoreCompany.Cosmetics
 
         public static Transform cosmeticGUIGlobalScale;
         private static GameObject displayGuy;
-        private static CosmeticApplication cosmeticApplication;
+        internal static CosmeticApplication displayGuyCosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
         public static bool menuIsInGame = false;
 
@@ -104,7 +104,7 @@ namespace MoreCompany.Cosmetics
             displayGuy = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder")
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
-            cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
+            displayGuyCosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
 
             GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
             GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
@@ -195,13 +195,13 @@ namespace MoreCompany.Cosmetics
 
         public static void UpdateCosmeticsOnDisplayGuy(bool startEnabled)
         {
-            cosmeticApplication.ClearCosmetics();
+            displayGuyCosmeticApplication.ClearCosmetics();
             foreach (var selected in locallySelectedCosmetics)
             {
-                cosmeticApplication.ApplyCosmetic(selected, startEnabled);
+                displayGuyCosmeticApplication.ApplyCosmetic(selected, startEnabled);
             }
 
-            foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
+            foreach (var cosmeticSpawned in displayGuyCosmeticApplication.spawnedCosmetics)
             {
                 RecursiveLayerChange(cosmeticSpawned.transform, 5);
                 if (menuIsInGame)

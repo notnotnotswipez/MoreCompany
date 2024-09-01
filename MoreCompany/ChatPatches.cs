@@ -47,11 +47,7 @@ namespace MoreCompany
             foreach (string cosmeticId in splitMessage)
             {
                 cosmeticsToApply.Add(cosmeticId);
-
-                if (MainClass.cosmeticsSyncOther.Value)
-                {
-                    cosmeticApplication.ApplyCosmetic(cosmeticId, true);
-                }
+                cosmeticApplication.ApplyCosmetic(cosmeticId, MainClass.cosmeticsSyncOther.Value);
             }
 
             if (playerClientId == StartOfRound.Instance.thisClientPlayerId && !showOwnCosmetics)

@@ -97,7 +97,16 @@ namespace MoreCompany
             ReadSettingsFromFile();
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
-                CosmeticSyncPatch.SyncCosmeticsToOtherClients();
+                foreach (CosmeticApplication cosmeticApplication in FindObjectsByType<CosmeticApplication>(FindObjectsSortMode.None))
+                {
+                    if (cosmeticApplication == CosmeticRegistry.displayGuyCosmeticApplication) continue;
+
+                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
+                    {
+                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
+                        spawnedCosmetic.gameObject.SetActive(cosmeticsSyncOther.Value);
+                    }
+                }
             };
 
             dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";

@@ -26,10 +26,7 @@ namespace MoreCompany
                 cosmeticApplication.detachedHead = detachedHead;
                 foreach (var cosmetic in cosmetics)
                 {
-                    if (MainClass.cosmeticsSyncOther.Value)
-                    {
-                        cosmeticApplication.ApplyCosmetic(cosmetic, true);
-                    }
+                    cosmeticApplication.ApplyCosmetic(cosmetic, MainClass.cosmeticsSyncOther.Value);
                 }
 
                 foreach (var cosmetic in cosmeticApplication.spawnedCosmetics)

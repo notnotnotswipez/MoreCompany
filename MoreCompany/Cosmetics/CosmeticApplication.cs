@@ -41,6 +41,7 @@ namespace MoreCompany.Cosmetics
         {
             foreach (var spawnedCosmetic in spawnedCosmetics)
             {
+                if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && detachedHead) continue;
                 spawnedCosmetic.gameObject.SetActive(true);
             }
         }
@@ -66,10 +67,7 @@ namespace MoreCompany.Cosmetics
                 cosmeticInstanceGameObject.SetActive(startEnabled);
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstanceGameObject.GetComponent<CosmeticInstance>();
                 spawnedCosmetics.Add(cosmeticInstanceBehavior);
-                if (startEnabled)
-                {
-                    ParentCosmetic(cosmeticInstanceBehavior);
-                }
+                ParentCosmetic(cosmeticInstanceBehavior);
             }
         }
         

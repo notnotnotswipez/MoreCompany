@@ -88,7 +88,7 @@ namespace MoreCompany
                 MainClass.StaticLogger.LogError(e);
             }
 
-            CosmeticRegistry.SpawnCosmeticGUI();
+            CosmeticRegistry.SpawnCosmeticGUI(true);
         }
 
         private static void CreateCrewCountInput(Transform parent)
@@ -200,6 +200,8 @@ namespace MoreCompany
             rectTransform.localScale = Vector3.one;
 
             quickMenuScrollInstance = spawnedQuickmenu;
+
+            CosmeticRegistry.SpawnCosmeticGUI(false);
         }
 
         public static void PopulateQuickMenu(QuickMenuManager __instance)

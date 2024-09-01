@@ -47,11 +47,7 @@ namespace MoreCompany
             foreach (string cosmeticId in splitMessage)
             {
                 cosmeticsToApply.Add(cosmeticId);
-
-                if (MainClass.cosmeticsSyncOther.Value)
-                {
-                    cosmeticApplication.ApplyCosmetic(cosmeticId, true);
-                }
+                cosmeticApplication.ApplyCosmetic(cosmeticId, MainClass.cosmeticsSyncOther.Value);
             }
 
             if (playerClientId == StartOfRound.Instance.thisClientPlayerId && !showOwnCosmetics)
@@ -134,17 +130,21 @@ namespace MoreCompany
             }
         }
 
-        public static void SyncCosmeticsToOtherClients(PlayerControllerB playerController, bool requestAll = false)
+        public static void SyncCosmeticsToOtherClients(PlayerControllerB playerControllerTmp = null, bool disabled = false, bool requestAll = false)
         {
-            string cosmeticsStr = string.Join(',', CosmeticRegistry.locallySelectedCosmetics);
-            int writeSize = FastBufferWriter.GetWriteSize(playerController.playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr) + FastBufferWriter.GetWriteSize(requestAll);
-            var writer = new FastBufferWriter(writeSize, Allocator.Temp);
-            using (writer)
+            PlayerControllerB playerController = playerControllerTmp ?? StartOfRound.Instance?.localPlayerController;
+            if (playerController != null)
             {
-                writer.WriteValueSafe(playerController.playerClientId);
-                writer.WriteValueSafe(cosmeticsStr);
-                writer.WriteValueSafe(requestAll);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_SV_SyncCosmetics", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                string cosmeticsStr = disabled ? "" : string.Join(',', CosmeticRegistry.GetCosmeticsToSync());
+                int writeSize = FastBufferWriter.GetWriteSize(playerController.playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr) + FastBufferWriter.GetWriteSize(requestAll);
+                var writer = new FastBufferWriter(writeSize, Allocator.Temp);
+                using (writer)
+                {
+                    writer.WriteValueSafe(playerController.playerClientId);
+                    writer.WriteValueSafe(cosmeticsStr);
+                    writer.WriteValueSafe(requestAll);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_SV_SyncCosmetics", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                }
             }
         }
 
@@ -164,7 +164,7 @@ namespace MoreCompany
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("MC_CL_ReceiveAllCosmetics", CL_ReceiveAllCosmetics);
             }
 
-            SyncCosmeticsToOtherClients(__instance, true);
+            SyncCosmeticsToOtherClients(playerControllerTmp: __instance, requestAll: true);
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "SetInstanceValuesBackToDefault")]

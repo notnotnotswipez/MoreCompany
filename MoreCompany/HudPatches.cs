@@ -39,7 +39,8 @@ namespace MoreCompany
     {
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.newPlayerCount = MainClass.playerCount.Value;
+            MainClass.actualPlayerCount = MainClass.playerCount.Value;
+            MainClass.newPlayerCount = Math.Max(4, MainClass.actualPlayerCount);
 
             Transform lobbyHostOptions = __instance.transform.parent.gameObject.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
             if (lobbyHostOptions != null)
@@ -50,7 +51,7 @@ namespace MoreCompany
                     if (parent.Find("CrewCount"))
                     {
                         TMP_InputField inputField = parent.Find("CrewCount").Find("InputField (TMP)").GetComponent<TMP_InputField>();
-                        inputField.text = MainClass.newPlayerCount.ToString();
+                        inputField.text = MainClass.actualPlayerCount.ToString();
                     }
                     else
                     {
@@ -61,7 +62,7 @@ namespace MoreCompany
 
                         TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
                         inputField.characterLimit = 3;
-                        inputField.text = MainClass.newPlayerCount.ToString();
+                        inputField.text = MainClass.actualPlayerCount.ToString();
                         inputField.onSubmit.AddListener(s =>
                         {
                             UpdateTextBox(inputField, s);
@@ -77,12 +78,12 @@ namespace MoreCompany
 
         public static void UpdateTextBox(TMP_InputField inputField, string s)
         {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
+            if (inputField.text == MainClass.actualPlayerCount.ToString())
                 return;
 
             if (int.TryParse(s, out int result))
             {
-                int originalCount = MainClass.newPlayerCount;
+                int originalCount = MainClass.actualPlayerCount;
                 MainClass.playerCount.Value = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
                 MainClass.StaticConfig.Save();
                 inputField.text = MainClass.playerCount.Value.ToString();
@@ -91,7 +92,7 @@ namespace MoreCompany
             }
             else if (s.Length != 0)
             {
-                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.text = MainClass.actualPlayerCount.ToString();
                 inputField.caretPosition = 1;
             }
         }

@@ -1,10 +1,12 @@
 using HarmonyLib;
+using System;
 using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace MoreCompany
 {
@@ -77,7 +79,8 @@ namespace MoreCompany
                                 IP_Address = ip_placeholder.text;
                             ES3.Save("LANIPAddress", IP_Address, "LCGeneralSaveData");
                             GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(false);
-                            MainClass.newPlayerCount = 4;
+                            MainClass.actualPlayerCount = 4;
+                            MainClass.newPlayerCount = MainClass.actualPlayerCount;
                             NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = IP_Address;
                             MainClass.StaticLogger.LogInfo($"Listening to LAN server: {IP_Address}");
                             GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
@@ -120,13 +123,14 @@ namespace MoreCompany
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {
-                if (MainClass.newPlayerCount != crewSizeMismatch)
+                if (MainClass.actualPlayerCount != crewSizeMismatch)
                 {
                     GameObject.Find("MenuManager").GetComponent<MenuManager>().menuNotification.SetActive(false);
 
                     // Automatic Reconnect
                     Object.FindObjectOfType<MenuManager>().SetLoadingScreen(isLoading: true);
-                    MainClass.newPlayerCount = crewSizeMismatch;
+                    MainClass.actualPlayerCount = crewSizeMismatch;
+                    MainClass.newPlayerCount = Math.Max(4, MainClass.actualPlayerCount);
                     __instance.StartCoroutine(delayedReconnect());
                 }
 

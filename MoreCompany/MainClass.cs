@@ -14,7 +14,6 @@ using HarmonyLib;
 using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
-using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -30,9 +29,10 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
-        public static int minPlayerCount = 4;
-        public static int maxPlayerCount = 50;
-        public static int newPlayerCount = 32;
+        public static int minPlayerCount = 2;
+        public static int maxPlayerCount = 64;
+        public static int actualPlayerCount = 8;
+        public static int newPlayerCount = actualPlayerCount; // Min 4 to prevent things breaking
 
         public static ConfigFile StaticConfig;
         public static ConfigEntry<int> playerCount;
@@ -81,7 +81,8 @@ namespace MoreCompany
                 }
                 else
                 {
-                    newPlayerCount = playerCount.Value;
+                    actualPlayerCount = playerCount.Value;
+                    newPlayerCount = Mathf.Max(4, actualPlayerCount);
                 }
             };
             int clampedPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
@@ -90,7 +91,11 @@ namespace MoreCompany
                 playerCount.Value = clampedPlayerCount;
                 StaticConfig.Save();
             }
-            newPlayerCount = playerCount.Value;
+            else
+            {
+                actualPlayerCount = playerCount.Value;
+                newPlayerCount = Mathf.Max(4, actualPlayerCount);
+            }
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
                 foreach (PlayerControllerB playerController in FindObjectsByType<PlayerControllerB>(FindObjectsSortMode.None))
@@ -156,12 +161,14 @@ namespace MoreCompany
 
             SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
             {
-                newPlayerCount = lobby.MaxMembers;
+                actualPlayerCount = lobby.MaxMembers;
+                newPlayerCount = Math.Max(4, actualPlayerCount);
             };
 
             SteamMatchmaking.OnLobbyEntered += (lobby) =>
             {
-                newPlayerCount = lobby.MaxMembers;
+                actualPlayerCount = lobby.MaxMembers;
+                newPlayerCount = Math.Max(4, actualPlayerCount);
             };
 
             StaticLogger.LogInfo("Loading SETTINGS...");
@@ -548,7 +555,7 @@ namespace MoreCompany
         {
             if (__instance.disableSteam)
             {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + MainClass.newPlayerCount);
+                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + MainClass.actualPlayerCount);
             }
             else
             {
@@ -576,7 +583,7 @@ namespace MoreCompany
                     else if (foundCount && instruction.ToString() == "ldc.i4.4 NULL")
                     {
                         alreadyReplaced = true;
-                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "actualPlayerCount"));
                         newInstructions.Add(codeInstruction);
                         continue;
                     }
@@ -585,7 +592,7 @@ namespace MoreCompany
                 newInstructions.Add(instruction);
             }
 
-            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace newPlayerCount");
+            if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("ConnectionApproval failed to replace actualPlayerCount");
 
             return newInstructions.AsEnumerable();
         }
@@ -613,17 +620,17 @@ namespace MoreCompany
                     {
                         if (array.Length > 2 && array[2] == "morecompany")
                         {
-                            joinerCrewSize = MainClass.newPlayerCount;
+                            joinerCrewSize = MainClass.actualPlayerCount;
                         }
                     }
                 }
 
                 MainClass.StaticLogger.LogInfo("Actual Count: " + joinerCrewSize);
-                MainClass.StaticLogger.LogInfo("Expected Count: " + MainClass.newPlayerCount);
+                MainClass.StaticLogger.LogInfo("Expected Count: " + MainClass.actualPlayerCount);
 
-                if (MainClass.newPlayerCount > 4 && MainClass.newPlayerCount != joinerCrewSize)
+                if (MainClass.actualPlayerCount > 4 && MainClass.actualPlayerCount != joinerCrewSize)
                 {
-                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {joinerCrewSize}";
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.actualPlayerCount}. Your size: {joinerCrewSize}";
                     response.Approved = false;
                 }
             }

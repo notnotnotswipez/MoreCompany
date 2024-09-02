@@ -79,7 +79,7 @@ namespace MoreCompany
                     playerCount.Value = clampedPlayerCount;
                     StaticConfig.Save();
                 }
-                else
+                else if (StartOfRound.Instance == null)
                 {
                     actualPlayerCount = playerCount.Value;
                     newPlayerCount = Mathf.Max(4, actualPlayerCount);
@@ -91,7 +91,7 @@ namespace MoreCompany
                 playerCount.Value = clampedPlayerCount;
                 StaticConfig.Save();
             }
-            else
+            else if (StartOfRound.Instance == null)
             {
                 actualPlayerCount = playerCount.Value;
                 newPlayerCount = Mathf.Max(4, actualPlayerCount);

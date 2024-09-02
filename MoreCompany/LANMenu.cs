@@ -1,6 +1,5 @@
 using HarmonyLib;
 using System.Collections;
-using System.Text;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -13,8 +12,6 @@ namespace MoreCompany
     {
         public static void InitializeMenu()
         {
-            CreateUI();
-
             var startLAN_button = GameObject.Find("Canvas/MenuContainer/MainButtons/StartLAN");
             if (startLAN_button != null)
             {
@@ -22,22 +19,17 @@ namespace MoreCompany
                 startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
                 startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                    if (footerText != null)
-                        footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
-
                     GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
                 });
             }
-        }
-        private static GameObject CreateUI()
-        {
-            if (GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings") != null) return null;
+
+
+            if (GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings") != null) return;
 
             var menuContainer = GameObject.Find("Canvas/MenuContainer");
-            if (menuContainer == null) return null;
+            if (menuContainer == null) return;
             var LobbyHostSettings = GameObject.Find("Canvas/MenuContainer/LobbyHostSettings");
-            if (LobbyHostSettings == null) return null;
+            if (LobbyHostSettings == null) return;
 
             // Clone LobbyHostSettings
             GameObject menu = Instantiate(LobbyHostSettings, LobbyHostSettings.transform.position, LobbyHostSettings.transform.rotation, menuContainer.transform);
@@ -85,6 +77,7 @@ namespace MoreCompany
                                 IP_Address = ip_placeholder.text;
                             ES3.Save("LANIPAddress", IP_Address, "LCGeneralSaveData");
                             GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(false);
+                            MainClass.newPlayerCount = 4;
                             NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = IP_Address;
                             MainClass.StaticLogger.LogInfo($"Listening to LAN server: {IP_Address}");
                             GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
@@ -92,26 +85,7 @@ namespace MoreCompany
                     }
                 }
 
-                TextMeshProUGUI footerText = lanSubMenu.transform.Find("PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                if (footerText != null)
-                    footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
-
                 lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions").gameObject.SetActive(true);
-            }
-
-            return menu;
-        }
-    }
-
-    // Crew Size Mismatch
-    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
-    public static class ConnectionDataPatch
-    {
-        public static void Postfix(ref GameNetworkManager __instance)
-        {
-            if (__instance.disableSteam)
-            {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum.ToString() + "," + MainClass.newPlayerCount);
             }
         }
     }
@@ -146,23 +120,14 @@ namespace MoreCompany
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {
-                MainClass.newPlayerCount = Mathf.Clamp(crewSizeMismatch, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-
-                if (MainClass.newPlayerCount == crewSizeMismatch)
+                if (MainClass.newPlayerCount != crewSizeMismatch)
                 {
                     GameObject.Find("MenuManager").GetComponent<MenuManager>().menuNotification.SetActive(false);
 
                     // Automatic Reconnect
                     Object.FindObjectOfType<MenuManager>().SetLoadingScreen(isLoading: true);
+                    MainClass.newPlayerCount = crewSizeMismatch;
                     __instance.StartCoroutine(delayedReconnect());
-
-                    //// Manual Reconnect
-                    //foreach (TMP_InputField field in MenuManagerLogoOverridePatch.inputFields)
-                    //    field.text = MainClass.newPlayerCount.ToString();
-                    //TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                    //if (footerText != null)
-                    //    footerText.text = $"The crew size was mismatched and has automatically been changed to {crewSizeMismatch}. Please re-attempt the connection.";
-                    //GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
                 }
 
                 crewSizeMismatch = 0;

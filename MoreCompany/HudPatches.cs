@@ -34,15 +34,74 @@ namespace MoreCompany
 		}
 	}
 
-	[HarmonyPatch(typeof(MenuManager), "Awake")]
-	public static class MenuManagerLogoOverridePatch
+    [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
+    public static class MenuManagerHost
     {
-        public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
-
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.ReadSettingsFromFile();
+            MainClass.newPlayerCount = MainClass.playerCount.Value;
 
+            Transform lobbyHostOptions = __instance.transform.parent.gameObject.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
+            if (lobbyHostOptions != null)
+            {
+                Transform parent = lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal");
+                if (parent != null)
+                {
+                    if (parent.Find("CrewCount"))
+                    {
+                        TMP_InputField inputField = parent.Find("CrewCount").Find("InputField (TMP)").GetComponent<TMP_InputField>();
+                        inputField.text = MainClass.newPlayerCount.ToString();
+                    }
+                    else
+                    {
+                        GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
+                        createdCrewUI.name = "CrewCount";
+                        RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
+                        rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
+
+                        TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
+                        inputField.characterLimit = 3;
+                        inputField.text = MainClass.newPlayerCount.ToString();
+                        inputField.onSubmit.AddListener(s =>
+                        {
+                            UpdateTextBox(inputField, s);
+                        });
+                        inputField.onDeselect.AddListener(s =>
+                        {
+                            UpdateTextBox(inputField, s);
+                        });
+                    }
+                }
+            }
+        }
+
+        public static void UpdateTextBox(TMP_InputField inputField, string s)
+        {
+            if (inputField.text == MainClass.newPlayerCount.ToString())
+                return;
+
+            if (int.TryParse(s, out int result))
+            {
+                int originalCount = MainClass.newPlayerCount;
+                MainClass.playerCount.Value = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.StaticConfig.Save();
+                inputField.text = MainClass.playerCount.Value.ToString();
+                if (MainClass.playerCount.Value != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.playerCount.Value}");
+            }
+            else if (s.Length != 0)
+            {
+                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.caretPosition = 1;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(MenuManager), "Awake")]
+	public static class MenuManagerPatch
+    {
+        public static void Postfix(MenuManager __instance)
+        {
             // Add the MoreCompany logo
             try
             {
@@ -70,18 +129,9 @@ namespace MoreCompany
                 MainClass.StaticLogger.LogError(e);
 			}
 
-            // Add the crew count input
             try
             {
                 LANMenu.InitializeMenu();
-                inputFields.Clear();
-                GameObject parent = __instance.transform.parent.gameObject;
-                Transform lobbyHostOptions = parent.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
-                if (lobbyHostOptions != null)
-                    CreateCrewCountInput(lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
-                Transform lobbyJoinOptions = parent.transform.Find("MenuContainer/LobbyJoinSettings/JoinSettingsContainer/LobbyJoinOptions");
-                if (lobbyJoinOptions != null)
-                    CreateCrewCountInput(lobbyJoinOptions.Find("LANOptions"));
             }
             catch (Exception e)
             {
@@ -89,49 +139,6 @@ namespace MoreCompany
             }
 
             CosmeticRegistry.SpawnCosmeticGUI(true);
-        }
-
-        private static void CreateCrewCountInput(Transform parent)
-        {
-            GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
-            RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
-
-            TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
-            inputField.characterLimit = 3;
-            inputField.text = MainClass.newPlayerCount.ToString();
-            inputFields.Add(inputField);
-            inputField.onSubmit.AddListener(s => {
-                UpdateTextBox(inputField, s);
-            });
-            inputField.onDeselect.AddListener(s => {
-                UpdateTextBox(inputField, s);
-            });
-        }
-
-        public static void UpdateTextBox(TMP_InputField inputField, string s)
-        {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
-                return;
-
-            if (int.TryParse(s, out int result))
-            {
-                int originalCount = MainClass.newPlayerCount;
-                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                foreach (TMP_InputField field in inputFields)
-                    field.text = MainClass.newPlayerCount.ToString();
-                MainClass.SaveSettingsToFile();
-                if (MainClass.newPlayerCount != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
-            }
-            else if (s.Length != 0)
-            {
-                foreach (TMP_InputField field in inputFields)
-                {
-                    field.text = MainClass.newPlayerCount.ToString();
-                    field.caretPosition = 1;
-                }
-            }
         }
     }
 

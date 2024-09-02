@@ -14,6 +14,7 @@ using HarmonyLib;
 using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -29,7 +30,6 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
-        public static int defaultPlayerCount = 32;
         public static int minPlayerCount = 4;
         public static int maxPlayerCount = 50;
         public static int newPlayerCount = 32;
@@ -64,13 +64,33 @@ namespace MoreCompany
             StaticLogger = Logger;
             StaticConfig = Config;
 
-            playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
+            playerCount = StaticConfig.Bind("General", "Player Count", 8, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
             cosmeticsDeadBodies = StaticConfig.Bind("Cosmetics", "Show On Dead Bodies", true, "Should you be able to see cosmetics on dead bodies?");
             cosmeticsMaskedEnemy = StaticConfig.Bind("Cosmetics", "Show On Masked Enemy", true, "Should you be able to see cosmetics on the masked enemy?");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
             disabledCosmetics = StaticConfig.Bind("Cosmetics", "Disabled Cosmetics", "", "Comma separated list of cosmetics to disable");
+
+            playerCount.SettingChanged += (sender, args) => {
+                int clampedPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
+                if (clampedPlayerCount != playerCount.Value)
+                {
+                    playerCount.Value = clampedPlayerCount;
+                    StaticConfig.Save();
+                }
+                else
+                {
+                    newPlayerCount = playerCount.Value;
+                }
+            };
+            int clampedPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
+            if (clampedPlayerCount != playerCount.Value)
+            {
+                playerCount.Value = clampedPlayerCount;
+                StaticConfig.Save();
+            }
+            newPlayerCount = playerCount.Value;
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
                 foreach (PlayerControllerB playerController in FindObjectsByType<PlayerControllerB>(FindObjectsSortMode.None))
@@ -145,7 +165,6 @@ namespace MoreCompany
             };
 
             StaticLogger.LogInfo("Loading SETTINGS...");
-            ReadSettingsFromFile();
 
             dynamicCosmeticsPath = Paths.PluginPath + "/MoreCompanyCosmetics";
 
@@ -237,26 +256,6 @@ namespace MoreCompany
                 built += cosmetic + "\n";
             }
             System.IO.File.WriteAllText(cosmeticSavePath, built);
-        }
-
-        public static void SaveSettingsToFile()
-        {
-            playerCount.Value = newPlayerCount;
-            StaticConfig.Save();
-        }
-
-        public static void ReadSettingsFromFile()
-        {
-            try
-            {
-                newPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
-            }
-            catch
-            {
-                newPlayerCount = defaultPlayerCount;
-                playerCount.Value = newPlayerCount;
-                StaticConfig.Save();
-            }
         }
 
         private static void LoadAssets(AssetBundle bundle)
@@ -538,8 +537,23 @@ namespace MoreCompany
     {
         public static void Prefix(ref int maxMembers)
         {
-            MainClass.ReadSettingsFromFile();
             maxMembers = MainClass.newPlayerCount;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
+    public static class ConnectionDataPatch
+    {
+        public static void Postfix(ref GameNetworkManager __instance)
+        {
+            if (__instance.disableSteam)
+            {
+                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + MainClass.newPlayerCount);
+            }
+            else
+            {
+                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + (ulong)SteamClient.SteamId + ",morecompany");
+            }
         }
     }
 
@@ -578,14 +592,38 @@ namespace MoreCompany
 
         private static void Postfix(ref GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
         {
-            // LAN Crew Size Mismatch
-            if (response.Approved && __instance.disableSteam)
+            // Crew Size Mismatch
+            if (response.Approved)
             {
                 string @string = Encoding.ASCII.GetString(request.Payload);
                 string[] array = @string.Split(",");
-                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.newPlayerCount.ToString()))
+                int joinerCrewSize = 4;
+                if (!string.IsNullOrEmpty(@string))
                 {
-                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {array[1]}";
+                    MainClass.StaticLogger.LogInfo("Payload Content: " + string.Join(',', array));
+                    MainClass.StaticLogger.LogInfo("Payload Length: " + array.Length);
+                    if (__instance.disableSteam)
+                    {
+                        if (array.Length > 1 && int.TryParse(array[1], out int tmpCrewSize) && tmpCrewSize > 0)
+                        {
+                            joinerCrewSize = tmpCrewSize;
+                        }
+                    }
+                    else
+                    {
+                        if (array.Length > 2 && array[2] == "morecompany")
+                        {
+                            joinerCrewSize = MainClass.newPlayerCount;
+                        }
+                    }
+                }
+
+                MainClass.StaticLogger.LogInfo("Actual Count: " + joinerCrewSize);
+                MainClass.StaticLogger.LogInfo("Expected Count: " + MainClass.newPlayerCount);
+
+                if (MainClass.newPlayerCount > 4 && MainClass.newPlayerCount != joinerCrewSize)
+                {
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {joinerCrewSize}";
                     response.Approved = false;
                 }
             }

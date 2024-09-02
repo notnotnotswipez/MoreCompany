@@ -544,7 +544,7 @@ namespace MoreCompany
     {
         public static void Prefix(ref int maxMembers)
         {
-            maxMembers = MainClass.newPlayerCount;
+            maxMembers = MainClass.actualPlayerCount;
         }
     }
 

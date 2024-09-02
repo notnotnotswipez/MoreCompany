@@ -28,8 +28,6 @@ namespace MoreCompany
             if (result != Steamworks.Result.OK)
                 return;
 
-            lobby.SetData("morecompany", "t");
-
             if (lobby.GetData("tag") == "none" && !Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
                 lobby.SetData("tag", "morecompany");
@@ -42,16 +40,21 @@ namespace MoreCompany
     {
         [HarmonyPatch("ApplyFilters")]
         [HarmonyPrefix]
-        public static void ApplyFilters_Prefix(ref LobbyQuery __instance, Dictionary<string, string> ___stringFilters)
+        public static void ApplyFilters_Prefix(Dictionary<string, string> ___stringFilters)
         {
             if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
-                if (!___stringFilters.ContainsKey("morecompany"))
+                bool shouldReplaceTag = false;
+                SteamLobbyManager steamLobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
+                if (steamLobbyManager != null)
                 {
-                    ___stringFilters.Add("morecompany", "t");
+                    shouldReplaceTag = steamLobbyManager.serverTagInputField.text == string.Empty;
                 }
-
-                if (!___stringFilters.ContainsKey("tag") || ___stringFilters["tag"] == "none")
+                else if (!___stringFilters.ContainsKey("tag") || ___stringFilters["tag"] == "none")
+                {
+                    shouldReplaceTag = true;
+                }
+                if (shouldReplaceTag)
                 {
                     ___stringFilters.Remove("tag");
                     ___stringFilters.Add("tag", "morecompany");

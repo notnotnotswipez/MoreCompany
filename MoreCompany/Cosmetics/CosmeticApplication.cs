@@ -111,17 +111,14 @@ namespace MoreCompany.Cosmetics
             if (parentType == ParentType.Player)
             {
                 isActive = MainClass.cosmeticsSyncOther.Value && !isLocalPlayer;
-                MainClass.StaticLogger.LogInfo("UpdateAllCosmeticVisibilities: PlayerControllerB");
             }
             else if (parentType == ParentType.DeadBody)
             {
                 isActive = MainClass.cosmeticsDeadBodies.Value;
-                MainClass.StaticLogger.LogInfo("UpdateAllCosmeticVisibilities: DeadBodyInfo");
             }
             else if (parentType == ParentType.MaskedEnemy)
             {
                 isActive = MainClass.cosmeticsMaskedEnemy.Value;
-                MainClass.StaticLogger.LogInfo("UpdateAllCosmeticVisibilities: MaskedPlayerEnemy");
             }
 
             foreach (var spawnedCosmetic in spawnedCosmetics)

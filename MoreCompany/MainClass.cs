@@ -105,11 +105,7 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.gameObject.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsSyncOther.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities((int)playerController.playerClientId == StartOfRound.Instance.thisClientPlayerId);
                 }
             };
 
@@ -121,11 +117,7 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsDeadBodies.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities(false);
                 }
             };
 
@@ -137,11 +129,8 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsMaskedEnemy.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities(false);
+
                     maskedEnemy.skinnedMeshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                     maskedEnemy.meshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<MeshRenderer>();
                 }

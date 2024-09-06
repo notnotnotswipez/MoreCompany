@@ -34,12 +34,14 @@ namespace MoreCompany
 		}
 	}
 
-	[HarmonyPatch(typeof(MenuManager), "Awake")]
-	public static class MenuManagerLogoOverridePatch
+    [HarmonyPatch]
+    public static class MenuManagerLogoOverridePatch
     {
         public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
 
-        public static void Postfix(MenuManager __instance)
+        [HarmonyPatch(typeof(MenuManager), "Awake")]
+        [HarmonyPostfix]
+        public static void Awake_Postfix(MenuManager __instance)
         {
             MainClass.ReadSettingsFromFile();
 
@@ -131,6 +133,16 @@ namespace MoreCompany
                     field.text = MainClass.newPlayerCount.ToString();
                     field.caretPosition = 1;
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "Start")]
+        [HarmonyPostfix]
+        public static void Start_Postfix(MenuManager __instance)
+        {
+            if (GameNetworkManager.Instance.disableSteam && __instance.menuNotification.activeSelf)
+            {
+                __instance.lanWarningContainer.SetActive(false);
             }
         }
     }

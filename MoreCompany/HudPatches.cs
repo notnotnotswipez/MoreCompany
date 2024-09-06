@@ -39,15 +39,15 @@ namespace MoreCompany
     {
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.actualPlayerCount = MainClass.playerCount.Value;
-            MainClass.newPlayerCount = Math.Max(4, MainClass.actualPlayerCount);
-
-            Transform lobbyHostOptions = __instance.transform.parent.gameObject.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
+            Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
             if (lobbyHostOptions != null)
             {
                 Transform parent = lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal");
                 if (parent != null)
                 {
+                    MainClass.actualPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+                    MainClass.newPlayerCount = MainClass.actualPlayerCount;
+
                     if (parent.Find("CrewCount"))
                     {
                         TMP_InputField inputField = parent.Find("CrewCount").Find("InputField (TMP)").GetComponent<TMP_InputField>();
@@ -84,11 +84,12 @@ namespace MoreCompany
             if (int.TryParse(s, out int result))
             {
                 int originalCount = MainClass.actualPlayerCount;
-                MainClass.playerCount.Value = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.actualPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
                 MainClass.StaticConfig.Save();
-                inputField.text = MainClass.playerCount.Value.ToString();
-                if (MainClass.playerCount.Value != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.playerCount.Value}");
+                inputField.text = MainClass.actualPlayerCount.ToString();
+                if (MainClass.actualPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.actualPlayerCount}");
             }
             else if (s.Length != 0)
             {
@@ -266,7 +267,7 @@ namespace MoreCompany
                             SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
                         }
                     });
-                    playerVolume.value = Math.Clamp((SoundManager.Instance.playerVoiceVolumes[i] * (playerVolume.maxValue - playerVolume.minValue)) + playerVolume.minValue, playerVolume.minValue, playerVolume.maxValue);
+                    playerVolume.value = Mathf.Clamp((SoundManager.Instance.playerVoiceVolumes[i] * (playerVolume.maxValue - playerVolume.minValue)) + playerVolume.minValue, playerVolume.minValue, playerVolume.maxValue);
 
                     Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
                     kickButton.onClick.AddListener(() =>

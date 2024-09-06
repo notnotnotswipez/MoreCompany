@@ -104,7 +104,7 @@ namespace MoreCompany
             yield break;
         }
 
-        private static void Prefix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Prefix(GameNetworkManager __instance, ulong clientId)
         {
             crewSizeMismatch = 0;
             if (__instance.disableSteam)
@@ -119,7 +119,7 @@ namespace MoreCompany
                 catch { }
             }
         }
-        private static void Postfix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Postfix(GameNetworkManager __instance, ulong clientId)
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {
@@ -130,11 +130,52 @@ namespace MoreCompany
                     // Automatic Reconnect
                     Object.FindObjectOfType<MenuManager>().SetLoadingScreen(isLoading: true);
                     MainClass.actualPlayerCount = crewSizeMismatch;
-                    MainClass.newPlayerCount = Math.Max(4, MainClass.actualPlayerCount);
+                    MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
                     __instance.StartCoroutine(delayedReconnect());
                 }
 
                 crewSizeMismatch = 0;
+            }
+        }
+    }
+
+
+    [HarmonyPatch]
+    public static class LANHostPatches
+    {
+        [HarmonyPatch(typeof(MenuManager), "LAN_HostSetAllowRemoteConnections")]
+        [HarmonyPostfix]
+        private static void LAN_HostSetAllowRemoteConnections(MenuManager __instance)
+        {
+            __instance.hostSettings_LobbyPublic = true;
+            __instance.privatePublicDescription.text = "PUBLIC means your game will be joinable by anyone on your network.";
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
+        [HarmonyPostfix]
+        private static void LAN_HostSetLocal(MenuManager __instance)
+        {
+            __instance.hostSettings_LobbyPublic = false;
+            __instance.privatePublicDescription.text = "PRIVATE means your game will only be joinable from your local machine.";
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
+        [HarmonyPostfix]
+        private static void HostSetLobbyPublic(MenuManager __instance, bool setPublic)
+        {
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                __instance.hostSettings_LobbyPublic = setPublic;
+                __instance.lanSetLocalButtonAnimator.SetBool("isPressed", !setPublic);
+                __instance.lanSetAllowRemoteButtonAnimator.SetBool("isPressed", setPublic);
+                if (setPublic)
+                {
+                    __instance.LAN_HostSetAllowRemoteConnections();
+                }
+                else
+                {
+                    __instance.LAN_HostSetLocal();
+                }
             }
         }
     }

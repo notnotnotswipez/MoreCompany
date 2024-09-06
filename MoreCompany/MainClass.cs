@@ -31,11 +31,10 @@ namespace MoreCompany
     {
         public static int minPlayerCount = 2;
         public static int maxPlayerCount = 64;
-        public static int actualPlayerCount = 8;
-        public static int newPlayerCount = actualPlayerCount; // Min 4 to prevent things breaking
+        public static int actualPlayerCount = 32;
+        public static int newPlayerCount = Mathf.Max(4, actualPlayerCount);
 
         public static ConfigFile StaticConfig;
-        public static ConfigEntry<int> playerCount;
         public static ConfigEntry<bool> cosmeticsDeadBodies;
         public static ConfigEntry<bool> cosmeticsMaskedEnemy;
         public static ConfigEntry<bool> cosmeticsSyncOther;
@@ -64,38 +63,12 @@ namespace MoreCompany
             StaticLogger = Logger;
             StaticConfig = Config;
 
-            playerCount = StaticConfig.Bind("General", "Player Count", 8, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
             cosmeticsDeadBodies = StaticConfig.Bind("Cosmetics", "Show On Dead Bodies", true, "Should you be able to see cosmetics on dead bodies?");
             cosmeticsMaskedEnemy = StaticConfig.Bind("Cosmetics", "Show On Masked Enemy", true, "Should you be able to see cosmetics on the masked enemy?");
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
             disabledCosmetics = StaticConfig.Bind("Cosmetics", "Disabled Cosmetics", "", "Comma separated list of cosmetics to disable");
-
-            playerCount.SettingChanged += (sender, args) => {
-                int clampedPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
-                if (clampedPlayerCount != playerCount.Value)
-                {
-                    playerCount.Value = clampedPlayerCount;
-                    StaticConfig.Save();
-                }
-                else if (StartOfRound.Instance == null)
-                {
-                    actualPlayerCount = playerCount.Value;
-                    newPlayerCount = Mathf.Max(4, actualPlayerCount);
-                }
-            };
-            int clampedPlayerCount = Mathf.Clamp(playerCount.Value, minPlayerCount, maxPlayerCount);
-            if (clampedPlayerCount != playerCount.Value)
-            {
-                playerCount.Value = clampedPlayerCount;
-                StaticConfig.Save();
-            }
-            else if (StartOfRound.Instance == null)
-            {
-                actualPlayerCount = playerCount.Value;
-                newPlayerCount = Mathf.Max(4, actualPlayerCount);
-            }
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
                 foreach (PlayerControllerB playerController in FindObjectsByType<PlayerControllerB>(FindObjectsSortMode.None))
@@ -151,13 +124,13 @@ namespace MoreCompany
             SteamFriends.OnGameLobbyJoinRequested += (lobby, steamId) =>
             {
                 actualPlayerCount = lobby.MaxMembers;
-                newPlayerCount = Math.Max(4, actualPlayerCount);
+                newPlayerCount = Mathf.Max(4, actualPlayerCount);
             };
 
             SteamMatchmaking.OnLobbyEntered += (lobby) =>
             {
                 actualPlayerCount = lobby.MaxMembers;
-                newPlayerCount = Math.Max(4, actualPlayerCount);
+                newPlayerCount = Mathf.Max(4, actualPlayerCount);
             };
 
             StaticLogger.LogInfo("Loading SETTINGS...");
@@ -273,35 +246,30 @@ namespace MoreCompany
             StartOfRound round = StartOfRound.Instance;
             if (round.allPlayerObjects.Length != newPlayerCount)
             {
-                StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
                 uint starting = 10000;
 
                 int originalLength = round.allPlayerObjects.Length;
-
                 int difference = newPlayerCount - originalLength;
+
+                StaticLogger.LogInfo($"Resizing arrays from {originalLength} to {newPlayerCount} with difference of {difference}");
 
                 Array.Resize(ref round.allPlayerObjects, newPlayerCount);
                 Array.Resize(ref round.allPlayerScripts, newPlayerCount);
                 Array.Resize(ref round.gameStats.allPlayerStats, newPlayerCount);
                 Array.Resize(ref round.playerSpawnPositions, newPlayerCount);
 
-                StaticLogger.LogInfo($"Resizing player cache from {originalLength} to {newPlayerCount} with difference of {difference}");
-
                 if (difference > 0)
                 {
-                    //GameObject playerPrefab = round.playerPrefab;
-                    //GameObject firstPlayerObject = round.allPlayerObjects[0];
-                    GameObject firstPlayerObject = round.allPlayerObjects[3];
+                    GameObject firstPlayerObject = round.allPlayerObjects[originalLength - 1];
                     for (int i = 0; i < difference; i++)
                     {
                         uint newId = starting + (uint)i;
-                        //GameObject copy = GameObject.Instantiate(playerPrefab, firstPlayerObject.transform.parent);
                         GameObject copy = GameObject.Instantiate(firstPlayerObject, firstPlayerObject.transform.parent);
+
                         NetworkObject copyNetworkObject = copy.GetComponent<NetworkObject>();
                         ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", (uint) newId);
                         int handle = copyNetworkObject.gameObject.scene.handle;
                         uint globalObjectIdHash = newId;
-
                         if (!ScenePlacedObjects.ContainsKey(globalObjectIdHash))
                         {
                             ScenePlacedObjects.Add(globalObjectIdHash, new Dictionary<int, NetworkObject>());
@@ -313,12 +281,12 @@ namespace MoreCompany
                         }
                         ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
 
-                        copy.name = $"Player ({4 + i})";
+                        copy.name = $"Player ({originalLength + i})";
 
                         PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
 
                         // Reset
-                        newPlayerScript.playerClientId = (ulong)(4 + i);
+                        newPlayerScript.playerClientId = (ulong)(originalLength + i);
                         newPlayerScript.playerUsername = $"Player #{newPlayerScript.playerClientId}";
                         newPlayerScript.isPlayerControlled = false;
                         newPlayerScript.isPlayerDead = false;
@@ -596,8 +564,6 @@ namespace MoreCompany
                 int joinerCrewSize = 4;
                 if (!string.IsNullOrEmpty(@string))
                 {
-                    MainClass.StaticLogger.LogInfo("Payload Content: " + string.Join(',', array));
-                    MainClass.StaticLogger.LogInfo("Payload Length: " + array.Length);
                     if (__instance.disableSteam)
                     {
                         if (array.Length > 1 && int.TryParse(array[1], out int tmpCrewSize) && tmpCrewSize > 0)
@@ -614,10 +580,7 @@ namespace MoreCompany
                     }
                 }
 
-                MainClass.StaticLogger.LogInfo("Actual Count: " + joinerCrewSize);
-                MainClass.StaticLogger.LogInfo("Expected Count: " + MainClass.actualPlayerCount);
-
-                if (MainClass.actualPlayerCount > 4 && MainClass.actualPlayerCount != joinerCrewSize)
+                if (response.Approved && MainClass.actualPlayerCount > 4 && MainClass.actualPlayerCount != joinerCrewSize)
                 {
                     response.Reason = $"Crew size mismatch! Their size: {MainClass.actualPlayerCount}. Your size: {joinerCrewSize}";
                     response.Approved = false;

@@ -136,13 +136,17 @@ namespace MoreCompany
             }
         }
 
+        public static bool lanWarningShown = false;
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
         public static void Start_Postfix(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance.disableSteam)
+            if (!__instance.isInitScene && GameNetworkManager.Instance.disableSteam)
             {
-                __instance.lanWarningContainer.SetActive(false);
+                if (lanWarningShown)
+                    __instance.lanWarningContainer.SetActive(false);
+                else
+                    lanWarningShown = true;
             }
         }
     }

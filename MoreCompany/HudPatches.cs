@@ -140,7 +140,7 @@ namespace MoreCompany
         [HarmonyPostfix]
         public static void Start_Postfix(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance.disableSteam && __instance.menuNotification.activeSelf)
+            if (GameNetworkManager.Instance.disableSteam)
             {
                 __instance.lanWarningContainer.SetActive(false);
             }

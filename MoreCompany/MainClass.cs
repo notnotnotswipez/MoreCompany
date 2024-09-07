@@ -1,10 +1,13 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -14,8 +17,12 @@ using HarmonyLib;
 using MoreCompany.Cosmetics;
 using MoreCompany.Utils;
 using Steamworks;
+using Steamworks.Data;
+using TMPro;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MoreCompany
 {
@@ -624,5 +631,153 @@ namespace MoreCompany
         {
             __instance.allPlayerScripts[playerObjectNumber].gameObject.SetActive(false);
         }
+
+        [HarmonyPatch(typeof(SteamLobbyManager), "OnEnable")]
+        [HarmonyPostfix]
+        private static void SLM_OnEnable(SteamLobbyManager __instance)
+        {
+            __instance.serverTagInputField.placeholder.gameObject.GetComponent<TMPro.TextMeshProUGUI>().text = "Enter tag or id...";
+        }
+
+        [HarmonyPatch(typeof(SteamLobbyManager), "RefreshServerListButton")]
+        [HarmonyPrefix]
+        private static bool RefreshServerListButton(SteamLobbyManager __instance, float ___refreshServerListTimer)
+        {
+            if (ulong.TryParse(__instance.serverTagInputField.text, out ulong lobbyId) && lobbyId.ToString().Length >= 15 && lobbyId.ToString().Length <= 20)
+            {
+                __instance.StartCoroutine(JoinLobby(__instance, lobbyId, ___refreshServerListTimer));
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static IEnumerator JoinLobby(SteamLobbyManager __instance, ulong lobbyId, float refreshServerListTimer)
+        {
+            if (GameNetworkManager.Instance.waitingForLobbyDataRefresh)
+            {
+                yield break;
+            }
+
+            MainClass.StaticLogger.LogWarning("[JoinLobby] Attempting to find lobby by id: " + lobbyId);
+            Task<Lobby?> joinTask = SteamMatchmaking.JoinLobbyAsync(lobbyId);
+            yield return new WaitUntil(() => joinTask.IsCompleted);
+            if (!joinTask.Result.HasValue)
+            {
+                MainClass.StaticLogger.LogWarning("[JoinLobby] Failed to find lobby by id: " + lobbyId);
+                yield break;
+            }
+            Lobby lobby = joinTask.Result.Value;
+            if (lobby.GetData("vers").IsNullOrWhiteSpace())
+            {
+                MainClass.StaticLogger.LogWarning("[JoinLobby] Failed to join lobby by id: " + lobbyId);
+                yield break;
+            }
+            LobbySlot.JoinLobbyAfterVerifying(lobby, lobby.Id);
+            MainClass.StaticLogger.LogWarning("[JoinLobby] Successfully found lobby by id: " + lobbyId);
+            __instance.serverTagInputField.text = "";
+        }
+
+        private static string GetGlobalIPAddress(bool external = false)
+        {
+            if (!external)
+            {
+                return Dns.GetHostEntry(Dns.GetHostName()).AddressList.First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
+            }
+
+            var url = "https://api.ipify.org/";
+            var ip = "0.0.0.0";
+
+            try
+            {
+                WebRequest request = WebRequest.Create(url);
+                request.Timeout = 2000;
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream dataStream = response.GetResponseStream();
+                using StreamReader reader = new StreamReader(dataStream);
+                ip = reader.ReadToEnd();
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                MainClass.StaticLogger.LogError(ex);
+            }
+
+            return ip;
+        }
+
+        [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
+        [HarmonyPostfix]
+        private static void OpenQuickMenu(QuickMenuManager __instance)
+        {
+            TextMeshProUGUI CrewHeaderText = __instance.menuContainer.transform.Find("PlayerList/Image/Header").GetComponentInChildren<TextMeshProUGUI>();
+            if (CrewHeaderText != null)
+            {
+                CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}):";
+            }
+
+            GameObject ResumeObj = __instance.menuContainer.transform.Find("MainButtons/Resume/")?.gameObject;
+            if (ResumeObj != null)
+            {
+                GameObject LobbyCodeObj = GameObject.Find("CopyCurrentLobbyCode");
+                if (LobbyCodeObj == null)
+                {
+                    LobbyCodeObj = UnityEngine.Object.Instantiate(ResumeObj.gameObject, ResumeObj.transform.parent);
+                    LobbyCodeObj.name = "CopyCurrentLobbyCode";
+
+                    TextMeshProUGUI LobbyCodeTextMesh = LobbyCodeObj.GetComponentInChildren<TextMeshProUGUI>();
+                    string defaultText = GameNetworkManager.Instance.disableSteam ? "> Copy IP Address" : "> Copy Lobby Code";
+                    LobbyCodeTextMesh.text = defaultText;
+
+                    Button LobbyCodeButton = LobbyCodeObj.GetComponent<Button>();
+                    LobbyCodeButton.onClick = new Button.ButtonClickedEvent();
+                    LobbyCodeButton.onClick.AddListener(() => {
+                        string lobbyId = "";
+                        if (GameNetworkManager.Instance.disableSteam)
+                        {
+                            if (GameNetworkManager.Instance.isHostingGame)
+                            {
+                                lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
+                                if (lobbyId == "0.0.0.0")
+                                {
+                                    lobbyId = GetGlobalIPAddress();
+                                }
+                            }
+                            else
+                            {
+                                lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
+                            }
+                        }
+                        else if (GameNetworkManager.Instance != null && GameNetworkManager.Instance.currentLobby.HasValue)
+                        {
+                            lobbyId = GameNetworkManager.Instance.currentLobby.Value.Id.Value.ToString();
+                        }
+                        LoadLobbyListAndFilterPatch.CopyLobbyCodeToClipboard(lobbyId, LobbyCodeTextMesh, [defaultText, "Copied To Clipboard", "Invalid Code"]);
+                    });
+                }
+
+                RectTransform rect = LobbyCodeObj.GetComponent<RectTransform>();
+                if (rect == null)
+                {
+                    return;
+                }
+
+                GameObject DebugMenu = __instance.menuContainer.transform.Find("DebugMenu")?.gameObject;
+                if (DebugMenu != null && DebugMenu.activeSelf)
+                {
+                    LobbyCodeObj.transform.SetParent(DebugMenu.transform);
+                    rect.localPosition = new Vector3(125f, 185f, 0f);
+                    rect.localScale = new Vector3(1f, 1f, 1f);
+                }
+                else
+                {
+                    LobbyCodeObj.transform.SetParent(ResumeObj.transform.parent);
+                    RectTransform resumeRect = ResumeObj.GetComponent<RectTransform>();
+                    rect.localPosition = resumeRect.localPosition + new Vector3(0f, 182f, 0f);
+                    rect.localScale = resumeRect.localScale;
+                }
+            }
+        }
+
     }
 }

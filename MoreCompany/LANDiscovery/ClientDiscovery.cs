@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace MoreCompany.LANDiscovery
 {
-    public class Lobby_LAN
+    public class LANLobby
     {
         public string IPAddress;
         public int MemberCount;
@@ -38,10 +38,12 @@ namespace MoreCompany.LANDiscovery
         public int listenPort = 47777;
         internal bool isListening = false;
 
-        private List<Lobby_LAN> discoveredLobbies = new List<Lobby_LAN>();
+        private List<LANLobby> discoveredLobbies = new List<LANLobby>();
 
-        public async Task<List<Lobby_LAN>> DiscoverLobbiesAsync(float discoveryTime)
+        public async Task<List<LANLobby>> DiscoverLobbiesAsync(float discoveryTime)
         {
+            discoveredLobbies.Clear();
+
             udpClient = new UdpClient(listenPort);
             isListening = true;
 
@@ -85,7 +87,7 @@ namespace MoreCompany.LANDiscovery
                     int currentPlayers = int.Parse(parts[2]);
                     int maxPlayers = int.Parse(parts[3]);
 
-                    Lobby_LAN existingLobby = discoveredLobbies.Find(lobby =>
+                    LANLobby existingLobby = discoveredLobbies.Find(lobby =>
                         lobby.IPAddress == ipAddress);
 
                     if (existingLobby != null)
@@ -93,11 +95,11 @@ namespace MoreCompany.LANDiscovery
                         // Overwrite the existing lobby's data
                         existingLobby.MemberCount = currentPlayers;
                         existingLobby.MaxMembers = maxPlayers;
-                        MainClass.StaticLogger.LogInfo($"Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
+                        MainClass.StaticLogger.LogDebug($"Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
                     }
                     else
                     {
-                        Lobby_LAN lobby = new Lobby_LAN
+                        LANLobby lobby = new LANLobby
                         {
                             IPAddress = ipAddress,
                             Data = new Dictionary<string, string>() {

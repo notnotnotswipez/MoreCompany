@@ -49,6 +49,9 @@ namespace MoreCompany
         public static ConfigEntry<bool> cosmeticsPerProfile;
         public static ConfigEntry<string> disabledCosmetics;
 
+        public static ConfigEntry<int> lanDefaultPort;
+        public static ConfigEntry<int> lanDiscoveryPort;
+
         public static Texture2D mainLogo;
         public static GameObject quickMenuScrollParent;
 
@@ -76,6 +79,9 @@ namespace MoreCompany
             defaultCosmetics = StaticConfig.Bind("Cosmetics", "Default Cosmetics", true, "Should the default cosmetics be enabled?");
             cosmeticsPerProfile = StaticConfig.Bind("Cosmetics", "Per Profile Cosmetics", false, "Should the cosmetics be saved per-profile?");
             disabledCosmetics = StaticConfig.Bind("Cosmetics", "Disabled Cosmetics", "", "Comma separated list of cosmetics to disable");
+            AcceptableValueRange<int> acceptablePortRange = new AcceptableValueRange<int>(1, 65535);
+            lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a lobby", acceptablePortRange));
+            lanDiscoveryPort = StaticConfig.Bind("LAN", "Discovery Port", 47777, new ConfigDescription("The port used for lobby discovery", acceptablePortRange));
 
             cosmeticsSyncOther.SettingChanged += (sender, args) => {
                 foreach (PlayerControllerB playerController in FindObjectsByType<PlayerControllerB>(FindObjectsSortMode.None))
@@ -636,23 +642,40 @@ namespace MoreCompany
         [HarmonyPostfix]
         private static void SLM_OnEnable(SteamLobbyManager __instance)
         {
-            __instance.serverTagInputField.placeholder.gameObject.GetComponent<TMPro.TextMeshProUGUI>().text = "Enter tag or id...";
+            if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam)
+            {
+                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter Server IP";
+            }
+            else
+            {
+                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
+            }
         }
 
         [HarmonyPatch(typeof(SteamLobbyManager), "RefreshServerListButton")]
         [HarmonyPrefix]
-        private static bool RefreshServerListButton(SteamLobbyManager __instance, float ___refreshServerListTimer)
+        private static bool RefreshServerListButton(SteamLobbyManager __instance)
         {
-            if (ulong.TryParse(__instance.serverTagInputField.text, out ulong lobbyId) && lobbyId.ToString().Length >= 15 && lobbyId.ToString().Length <= 20)
+            if (__instance.serverTagInputField.text != string.Empty)
             {
-                __instance.StartCoroutine(JoinLobby(__instance, lobbyId, ___refreshServerListTimer));
-                return false;
+                if (GameNetworkManager.Instance.disableSteam)
+                {
+                    if (LANMenu.TryParseIpAndPort(__instance.serverTagInputField.text, out IPAddress ipAddress, out int port))
+                    {
+                        LANMenu.JoinLobbyByIP(ipAddress.ToString(), (ushort)port);
+                    }
+                }
+                else if (ulong.TryParse(__instance.serverTagInputField.text, out ulong lobbyId) && lobbyId.ToString().Length >= 15 && lobbyId.ToString().Length <= 20)
+                {
+                    __instance.StartCoroutine(JoinLobby(__instance, lobbyId));
+                    return false;
+                }
             }
 
             return true;
         }
 
-        internal static IEnumerator JoinLobby(SteamLobbyManager __instance, ulong lobbyId, float refreshServerListTimer)
+        internal static IEnumerator JoinLobby(SteamLobbyManager __instance, ulong lobbyId)
         {
             if (GameNetworkManager.Instance.waitingForLobbyDataRefresh)
             {

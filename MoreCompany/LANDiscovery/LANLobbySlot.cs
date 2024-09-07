@@ -9,15 +9,11 @@ namespace MoreCompany.LANDiscovery
     {
         public TextMeshProUGUI HostName;
 
-        public new Lobby_LAN thisLobby;
+        public new LANLobby thisLobby;
 
         public new void JoinButton()
         {
-            MainClass.actualPlayerCount = 4;
-            MainClass.newPlayerCount = MainClass.actualPlayerCount;
-            NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = thisLobby.IPAddress;
-            MainClass.StaticLogger.LogInfo($"Listening to LAN server: {thisLobby.IPAddress}");
-            GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
+            LANMenu.JoinLobbyByIP(thisLobby.IPAddress);
         }
     }
 }

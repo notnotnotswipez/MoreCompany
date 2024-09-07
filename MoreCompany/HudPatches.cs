@@ -133,7 +133,7 @@ namespace MoreCompany
 
             try
             {
-                LANMenu.InitializeMenu();
+                InitializeMenu();
             }
             catch (Exception e)
             {
@@ -141,6 +141,82 @@ namespace MoreCompany
             }
 
             CosmeticRegistry.SpawnCosmeticGUI(true);
+        }
+
+        public static void InitializeMenu()
+        {
+            var startLAN_button = GameObject.Find("Canvas/MenuContainer/MainButtons/StartLAN");
+            if (startLAN_button != null)
+            {
+                MainClass.StaticLogger.LogInfo("LANMenu startLAN Patched");
+                startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
+                startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
+                });
+            }
+
+            if (GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings") == null)
+            {
+                var menuContainer = GameObject.Find("Canvas/MenuContainer");
+                if (menuContainer == null) return;
+                var LobbyHostSettings = GameObject.Find("Canvas/MenuContainer/LobbyHostSettings");
+                if (LobbyHostSettings == null) return;
+
+                // Clone LobbyHostSettings
+                GameObject menu = GameObject.Instantiate(LobbyHostSettings, LobbyHostSettings.transform.position, LobbyHostSettings.transform.rotation, menuContainer.transform);
+                menu.name = "LobbyJoinSettings";
+
+                var lanSubMenu = menu.transform.Find("HostSettingsContainer");
+                if (lanSubMenu != null)
+                {
+                    lanSubMenu.name = "JoinSettingsContainer";
+                    lanSubMenu.transform.Find("LobbyHostOptions").name = "LobbyJoinOptions";
+
+                    GameObject.Destroy(menu.transform.Find("ChallengeLeaderboard").gameObject);
+                    GameObject.Destroy(menu.transform.Find("FilesPanel").gameObject);
+                    GameObject.Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/OptionsNormal").gameObject);
+                    GameObject.Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/AllowRemote").gameObject);
+                    GameObject.Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/Local").gameObject);
+
+                    var headerText = lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/Header");
+                    if (headerText != null)
+                        headerText.GetComponent<TextMeshProUGUI>().text = "Join LAN Server:";
+
+                    var addressField = lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/ServerNameField");
+                    if (addressField != null)
+                    {
+                        addressField.transform.localPosition = new Vector3(0f, 15f, -6.5f);
+                        addressField.gameObject.SetActive(true);
+                    }
+
+                    TMP_InputField ip_field = addressField.GetComponent<TMP_InputField>();
+                    if (ip_field != null)
+                    {
+                        TextMeshProUGUI ip_placeholder = ip_field.placeholder.GetComponent<TextMeshProUGUI>();
+                        ip_placeholder.text = ES3.Load("LANIPAddress", "LCGeneralSaveData", "127.0.0.1");
+
+                        Button confirmBut = lanSubMenu.transform.Find("Confirm")?.GetComponent<Button>();
+                        if (confirmBut != null)
+                        {
+                            confirmBut.onClick = new Button.ButtonClickedEvent();
+                            confirmBut.onClick.AddListener(() =>
+                            {
+                                string IP_Address = "127.0.0.1";
+                                if (ip_field.text != "")
+                                    IP_Address = ip_field.text;
+                                else
+                                    IP_Address = ip_placeholder.text;
+                                ES3.Save("LANIPAddress", IP_Address, "LCGeneralSaveData");
+                                GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(false);
+                                LANMenu.JoinLobbyByIP(IP_Address);
+                            });
+                        }
+                    }
+
+                    lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions").gameObject.SetActive(true);
+                }
+            }
         }
     }
 

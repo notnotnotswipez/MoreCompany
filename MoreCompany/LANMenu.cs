@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System.Collections;
+using System.Net;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -11,84 +12,44 @@ namespace MoreCompany
 {
     public class LANMenu : MonoBehaviour
     {
-        public static void InitializeMenu()
+        public static bool TryParseIpAndPort(string input, out IPAddress ipAddress, out int port)
         {
-            var startLAN_button = GameObject.Find("Canvas/MenuContainer/MainButtons/StartLAN");
-            if (startLAN_button != null)
+            ipAddress = null;
+            port = 0;
+
+            string[] parts = input.Split(':');
+            if (parts.Length > 2)
             {
-                MainClass.StaticLogger.LogInfo("LANMenu startLAN Patched");
-                startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
-                startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
-                });
+                return false;
             }
 
-            if (GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings") == null)
+            if (!IPAddress.TryParse(parts[0], out ipAddress))
             {
-                var menuContainer = GameObject.Find("Canvas/MenuContainer");
-                if (menuContainer == null) return;
-                var LobbyHostSettings = GameObject.Find("Canvas/MenuContainer/LobbyHostSettings");
-                if (LobbyHostSettings == null) return;
+                return false;
+            }
 
-                // Clone LobbyHostSettings
-                GameObject menu = Instantiate(LobbyHostSettings, LobbyHostSettings.transform.position, LobbyHostSettings.transform.rotation, menuContainer.transform);
-                menu.name = "LobbyJoinSettings";
-
-                var lanSubMenu = menu.transform.Find("HostSettingsContainer");
-                if (lanSubMenu != null)
+            if (parts.Length == 2)
+            {
+                if (!int.TryParse(parts[1], out port) || port < 0 || port > 65535)
                 {
-                    lanSubMenu.name = "JoinSettingsContainer";
-                    lanSubMenu.transform.Find("LobbyHostOptions").name = "LobbyJoinOptions";
-
-                    Destroy(menu.transform.Find("ChallengeLeaderboard").gameObject);
-                    Destroy(menu.transform.Find("FilesPanel").gameObject);
-                    Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/OptionsNormal").gameObject);
-                    Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/AllowRemote").gameObject);
-                    Destroy(lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/Local").gameObject);
-
-                    var headerText = lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/Header");
-                    if (headerText != null)
-                        headerText.GetComponent<TextMeshProUGUI>().text = "Join LAN Server:";
-
-                    var addressField = lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions/ServerNameField");
-                    if (addressField != null)
-                    {
-                        addressField.transform.localPosition = new Vector3(0f, 15f, -6.5f);
-                        addressField.gameObject.SetActive(true);
-                    }
-
-                    TMP_InputField ip_field = addressField.GetComponent<TMP_InputField>();
-                    if (ip_field != null)
-                    {
-                        TextMeshProUGUI ip_placeholder = ip_field.placeholder.GetComponent<TextMeshProUGUI>();
-                        ip_placeholder.text = ES3.Load("LANIPAddress", "LCGeneralSaveData", "127.0.0.1");
-
-                        Button confirmBut = lanSubMenu.transform.Find("Confirm")?.GetComponent<Button>();
-                        if (confirmBut != null)
-                        {
-                            confirmBut.onClick = new Button.ButtonClickedEvent();
-                            confirmBut.onClick.AddListener(() =>
-                            {
-                                string IP_Address = "127.0.0.1";
-                                if (ip_field.text != "")
-                                    IP_Address = ip_field.text;
-                                else
-                                    IP_Address = ip_placeholder.text;
-                                ES3.Save("LANIPAddress", IP_Address, "LCGeneralSaveData");
-                                GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(false);
-                                MainClass.actualPlayerCount = 4;
-                                MainClass.newPlayerCount = MainClass.actualPlayerCount;
-                                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = IP_Address;
-                                MainClass.StaticLogger.LogInfo($"Listening to LAN server: {IP_Address}");
-                                GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
-                            });
-                        }
-                    }
-
-                    lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions").gameObject.SetActive(true);
+                    return false;
                 }
             }
+
+            return true;
+        }
+
+        public static void JoinLobbyByIP(string IP_Address, ushort Port = 0)
+        {
+            if (Port == 0)
+                Port = (ushort)MainClass.lanDefaultPort.Value;
+
+            MainClass.actualPlayerCount = 4;
+            MainClass.newPlayerCount = MainClass.actualPlayerCount;
+            NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = IP_Address;
+            NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port = Port;
+            MainClass.StaticLogger.LogInfo($"Listening to LAN server: {IP_Address}:{Port}");
+            GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
         }
     }
 
@@ -175,6 +136,16 @@ namespace MoreCompany
                 {
                     __instance.LAN_HostSetLocal();
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "StartAClient")]
+        [HarmonyPrefix]
+        private static void StartAClient(MenuManager __instance)
+        {
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port = (ushort)MainClass.lanDefaultPort.Value;
             }
         }
     }

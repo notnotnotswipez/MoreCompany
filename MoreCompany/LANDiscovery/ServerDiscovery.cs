@@ -4,15 +4,12 @@ using System.Text;
 using UnityEngine;
 using HarmonyLib;
 using System.Collections.Generic;
-using Unity.Netcode.Transports.UTP;
-using Unity.Netcode;
 
 namespace MoreCompany.LANDiscovery
 {
     public class ServerDiscovery : MonoBehaviour
     {
         private UdpClient udpClient;
-        public int broadcastPort = 47777;
         internal bool isServerRunning = false;
 
         public void StartServerDiscovery()
@@ -31,7 +28,7 @@ namespace MoreCompany.LANDiscovery
             if (!isServerRunning)
                 return;
 
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, broadcastPort);
+            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, MainClass.lanDiscoveryPort.Value);
             List<string> lobbyData = new List<string>()
             {
                 "LC_MC_LAN",

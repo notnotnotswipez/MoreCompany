@@ -17,7 +17,7 @@ namespace MoreCompany.LANDiscovery
             "pedophile", "furfag", "necrophilia", "yiff", "sex", "porn"
         };
 
-        internal static Lobby_LAN[] currentLobbyList;
+        internal static LANLobby[] currentLobbyList;
 
         internal static ClientDiscovery clientDiscovery;
 
@@ -70,7 +70,8 @@ namespace MoreCompany.LANDiscovery
                 Object.Destroy(array[i].gameObject);
             }
             GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
-            Lobby_LAN[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
+            clientDiscovery.listenPort = MainClass.lanDiscoveryPort.Value;
+            LANLobby[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
             currentLobbyList = lobbiesArr;
             GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
             if (currentLobbyList != null)
@@ -92,7 +93,7 @@ namespace MoreCompany.LANDiscovery
                 __instance.serverListBlankText.text = "No available servers to join.";
             }
         }
-        private static IEnumerator loadLobbyListAndFilter(Lobby_LAN[] lobbyList, SteamLobbyManager __instance)
+        private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance)
         {
             for (int i = 0; i < lobbyList.Length; i++)
             {

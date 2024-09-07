@@ -1,6 +1,9 @@
+using BepInEx;
 using HarmonyLib;
 using System.Collections;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MoreCompany
 {
@@ -45,7 +48,42 @@ namespace MoreCompany
             foreach (LobbySlot lobbySlot in lobbySlots)
             {
                 lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
+
+                Button LobbyCodeBtn = lobbySlot.GetComponentInChildren<Button>();
+                if (LobbyCodeBtn != null)
+                {
+                    var CopyCodeButton = Object.Instantiate(LobbyCodeBtn, LobbyCodeBtn.transform.parent);
+                    CopyCodeButton.name = "CopyCodeButton";
+                    RectTransform rectTransform = CopyCodeButton.GetComponent<RectTransform>();
+                    rectTransform.anchoredPosition -= new Vector2(78f, 0f);
+                    var LobbyCodeTextMesh = CopyCodeButton.GetComponentInChildren<TextMeshProUGUI>();
+                    LobbyCodeTextMesh.text = "Code";
+                    CopyCodeButton.onClick = new Button.ButtonClickedEvent();
+                    CopyCodeButton.onClick.AddListener(() => CopyLobbyCodeToClipboard(lobbySlot.lobbyId.Value.ToString(), LobbyCodeTextMesh, ["Code", "Copied", "Invalid"]));
+                }
             }
+        }
+
+        internal static void CopyLobbyCodeToClipboard(string lobbyCode, TextMeshProUGUI textMesh, string[] textLabels)
+        {
+            if (textMesh.text != textLabels[0]) return;
+            GameNetworkManager.Instance.StartCoroutine(LobbySlotCopyCode(lobbyCode, textMesh, textLabels));
+        }
+        internal static IEnumerator LobbySlotCopyCode(string lobbyCode, TextMeshProUGUI textMesh, string[] textLabels)
+        {
+            if (!lobbyCode.IsNullOrWhiteSpace())
+            {
+                GUIUtility.systemCopyBuffer = lobbyCode;
+                MainClass.StaticLogger.LogInfo("Lobby code copied to clipboard: " + lobbyCode);
+                textMesh.text = textLabels[1];
+            }
+            else
+            {
+                textMesh.text = textLabels[2];
+            }
+            yield return new WaitForSeconds(1.2f);
+            textMesh.text = textLabels[0];
+            yield break;
         }
     }
 }

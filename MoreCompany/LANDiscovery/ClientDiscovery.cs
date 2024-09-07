@@ -12,6 +12,7 @@ namespace MoreCompany.LANDiscovery
     public class LANLobby
     {
         public string IPAddress;
+        public ushort Port;
         public int MemberCount;
         public int MaxMembers;
         public Dictionary<string, string> Data;
@@ -81,11 +82,12 @@ namespace MoreCompany.LANDiscovery
             try
             {
                 string[] parts = message.Split(';');
-                if (parts.Length == 4 && parts[0] == "LC_MC_LAN")
+                if (parts.Length == 5 && parts[0] == "LC_MC_LAN")
                 {
                     string lobbyName = parts[1];
-                    int currentPlayers = int.Parse(parts[2]);
-                    int maxPlayers = int.Parse(parts[3]);
+                    ushort port = ushort.Parse(parts[2]);
+                    int currentPlayers = int.Parse(parts[3]);
+                    int maxPlayers = int.Parse(parts[4]);
 
                     LANLobby existingLobby = discoveredLobbies.Find(lobby =>
                         lobby.IPAddress == ipAddress);
@@ -95,13 +97,14 @@ namespace MoreCompany.LANDiscovery
                         // Overwrite the existing lobby's data
                         existingLobby.MemberCount = currentPlayers;
                         existingLobby.MaxMembers = maxPlayers;
-                        MainClass.StaticLogger.LogDebug($"Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
+                        MainClass.StaticLogger.LogDebug($"Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
                     }
                     else
                     {
                         LANLobby lobby = new LANLobby
                         {
                             IPAddress = ipAddress,
+                            Port = port,
                             Data = new Dictionary<string, string>() {
                                 { "name", lobbyName }
                             },
@@ -110,7 +113,7 @@ namespace MoreCompany.LANDiscovery
                         };
 
                         discoveredLobbies.Add(lobby);
-                        MainClass.StaticLogger.LogInfo($"Discovered Lobby: {lobby.GetData("name")} at {lobby.IPAddress} with {lobby.MemberCount}/{lobby.MaxMembers} players.");
+                        MainClass.StaticLogger.LogInfo($"Discovered Lobby: {lobby.GetData("name")} at {lobby.IPAddress}:{lobby.Port} with {lobby.MemberCount}/{lobby.MaxMembers} players.");
                     }
                 }
                 else

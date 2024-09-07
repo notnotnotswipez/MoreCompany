@@ -4,6 +4,8 @@ using System.Text;
 using UnityEngine;
 using HarmonyLib;
 using System.Collections.Generic;
+using Unity.Netcode.Transports.UTP;
+using Unity.Netcode;
 
 namespace MoreCompany.LANDiscovery
 {
@@ -32,7 +34,8 @@ namespace MoreCompany.LANDiscovery
             List<string> lobbyData = new List<string>()
             {
                 "LC_MC_LAN",
-                GameNetworkManager.Instance.lobbyHostSettings.lobbyName,
+                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port.ToString(),
+                GameNetworkManager.Instance.lobbyHostSettings.lobbyName.Replace(";", ":"),
                 GameNetworkManager.Instance.connectedPlayers.ToString(),
                 MainClass.actualPlayerCount.ToString(),
             };

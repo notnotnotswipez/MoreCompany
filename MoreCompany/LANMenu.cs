@@ -1,11 +1,9 @@
 using HarmonyLib;
 using System.Collections;
 using System.Net;
-using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
-using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace MoreCompany
@@ -143,10 +141,32 @@ namespace MoreCompany
         [HarmonyPrefix]
         private static void StartAClient(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance.disableSteam)
-            {
-                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port = (ushort)MainClass.lanDefaultPort.Value;
-            }
+            NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port = (ushort)MainClass.lanDefaultPort.Value;
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "EnableLeaderboardDisplay")]
+        [HarmonyPostfix]
+        private static void EnableLeaderboardDisplay(MenuManager __instance, bool enable)
+        {
+            if (!enable || __instance.requestingLeaderboard || !GameNetworkManager.Instance.disableSteam) return;
+
+            __instance.requestingLeaderboard = true;
+
+            int weekNumber = GameNetworkManager.Instance.GetWeekNumber();
+            __instance.leaderboardHeaderText.text = "Challenge Moon " + GameNetworkManager.Instance.GetNameForWeekNumber(weekNumber) + " Results";
+
+            __instance.ClearLeaderboard();
+            __instance.leaderboardLoadingText.text = "No entries to display!";
+
+            int entryDetails = -1;
+            GameObject obj = Object.Instantiate(__instance.leaderboardSlotPrefab, __instance.leaderboardSlotsContainer);
+            obj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f + (float)__instance.leaderboardSlotOffset);
+            __instance.leaderboardSlotOffset -= 54;
+            obj.GetComponent<ChallengeLeaderboardSlot>().SetSlotValues(GameNetworkManager.Instance.username, 1, __instance.challengeScore, 0, entryDetails);
+
+            __instance.removeScoreButton.SetActive(false);
+            __instance.HostSettingsScreen.transform.Find("ChallengeLeaderboard/LobbyList (1)/ListPanel/Dropdown")?.gameObject?.SetActive(false);
+            __instance.requestingLeaderboard = false;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace MoreCompany.LANDiscovery
 
         public new void JoinButton()
         {
-            LANMenu.JoinLobbyByIP(thisLobby.IPAddress);
+            LANMenu.JoinLobbyByIP(thisLobby.IPAddress, thisLobby.Port);
         }
     }
 }

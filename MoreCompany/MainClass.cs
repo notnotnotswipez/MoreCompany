@@ -644,7 +644,7 @@ namespace MoreCompany
         {
             if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam)
             {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter Server IP";
+                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter IP Address";
             }
             else
             {

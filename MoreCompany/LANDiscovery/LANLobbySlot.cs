@@ -1,7 +1,4 @@
 using TMPro;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
-using UnityEngine;
 
 namespace MoreCompany.LANDiscovery
 {

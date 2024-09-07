@@ -47,6 +47,7 @@ namespace MoreCompany.LANDiscovery
 
             udpClient = new UdpClient(listenPort);
             isListening = true;
+            MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery listening started");
 
             Task listenTask = Task.Run(() => StartListening());
 
@@ -54,6 +55,7 @@ namespace MoreCompany.LANDiscovery
 
             isListening = false;
             udpClient.Close();
+            MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery listening stopped");
 
             return discoveredLobbies;
         }
@@ -73,7 +75,7 @@ namespace MoreCompany.LANDiscovery
             }
             catch (Exception ex)
             {
-                Debug.LogError("Error receiving UDP broadcast: " + ex.Message);
+                MainClass.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
             }
         }
 
@@ -82,29 +84,29 @@ namespace MoreCompany.LANDiscovery
             try
             {
                 string[] parts = message.Split(';');
-                if (parts.Length == 5 && parts[0] == "LC_MC_LAN")
+                if (parts.Length == 5 && parts[0] == LANLobbyManager.DiscoveryKey)
                 {
-                    string lobbyName = parts[1];
-                    ushort port = ushort.Parse(parts[2]);
-                    int currentPlayers = int.Parse(parts[3]);
-                    int maxPlayers = int.Parse(parts[4]);
+                    ushort lobbyPort = ushort.Parse(parts[1]);
+                    int currentPlayers = int.Parse(parts[2]);
+                    int maxPlayers = int.Parse(parts[3]);
+                    string lobbyName = parts[4];
 
                     LANLobby existingLobby = discoveredLobbies.Find(lobby =>
-                        lobby.IPAddress == ipAddress);
+                        lobby.IPAddress == ipAddress && lobby.Port == lobbyPort);
 
                     if (existingLobby != null)
                     {
-                        // Overwrite the existing lobby's data
+                        existingLobby.SetData("name", lobbyName);
                         existingLobby.MemberCount = currentPlayers;
                         existingLobby.MaxMembers = maxPlayers;
-                        MainClass.StaticLogger.LogDebug($"Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
+                        MainClass.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
                     }
                     else
                     {
                         LANLobby lobby = new LANLobby
                         {
                             IPAddress = ipAddress,
-                            Port = port,
+                            Port = lobbyPort,
                             Data = new Dictionary<string, string>() {
                                 { "name", lobbyName }
                             },
@@ -113,12 +115,12 @@ namespace MoreCompany.LANDiscovery
                         };
 
                         discoveredLobbies.Add(lobby);
-                        MainClass.StaticLogger.LogInfo($"Discovered Lobby: {lobby.GetData("name")} at {lobby.IPAddress}:{lobby.Port} with {lobby.MemberCount}/{lobby.MaxMembers} players.");
+                        MainClass.StaticLogger.LogInfo($"[LAN Discovery] Discovered Lobby: {lobby.GetData("name")} at {lobby.IPAddress}:{lobby.Port} with {lobby.MemberCount}/{lobby.MaxMembers} players.");
                     }
                 }
                 else
                 {
-                    MainClass.StaticLogger.LogWarning("Invalid broadcast format received.");
+                    MainClass.StaticLogger.LogWarning("[LAN Discovery] Invalid broadcast format received.");
                 }
             }
             catch (Exception ex)

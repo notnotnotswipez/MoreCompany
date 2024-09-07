@@ -21,7 +21,7 @@ namespace MoreCompany.LANDiscovery
                 udpClient = new UdpClient();
                 isServerRunning = true;
                 InvokeRepeating("BroadcastServer", 0, 1.0f); // Broadcast every second
-                MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery started");
+                MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery broadcasting started");
             }
         }
 
@@ -33,11 +33,11 @@ namespace MoreCompany.LANDiscovery
             IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, MainClass.lanDiscoveryPort.Value);
             List<string> lobbyData = new List<string>()
             {
-                "LC_MC_LAN",
+                LANLobbyManager.DiscoveryKey,
                 NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port.ToString(),
-                GameNetworkManager.Instance.lobbyHostSettings.lobbyName.Replace(";", ":"),
                 GameNetworkManager.Instance.connectedPlayers.ToString(),
                 MainClass.actualPlayerCount.ToString(),
+                GameNetworkManager.Instance.lobbyHostSettings.lobbyName.Replace(";", ":"),
             };
 
             byte[] data = Encoding.UTF8.GetBytes(string.Join(';', lobbyData));
@@ -51,7 +51,7 @@ namespace MoreCompany.LANDiscovery
                 isServerRunning = false;
                 CancelInvoke("BroadcastServer");
                 udpClient.Close();
-                MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery stopped");
+                MainClass.StaticLogger.LogInfo("[LAN Discovery] Server discovery broadcasting stopped");
             }
         }
 

@@ -11,6 +11,8 @@ namespace MoreCompany.LANDiscovery
     [HarmonyPatch]
     public static class LANLobbyManager
     {
+        public static string DiscoveryKey = "LC_MoreCompany";
+
         public static string[] offensiveWords = new string[] {
             "nigger", "faggot", "n1g", "nigers", "cunt", "pussies", "pussy", "minors", "children", "kids",
             "chink", "buttrape", "molest", "rape", "coon", "negro", "beastiality", "cocks", "cumshot", "ejaculate",
@@ -131,7 +133,7 @@ namespace MoreCompany.LANDiscovery
                 componentInChildren.HostName = componentInChildren.transform.Find("HostName")?.GetComponent<TextMeshProUGUI>();
                 if (componentInChildren.HostName)
                 {
-                    componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}";
+                    componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}:{lobbyList[i].Port}";
                     componentInChildren.HostName.gameObject.SetActive(true);
                 }
 

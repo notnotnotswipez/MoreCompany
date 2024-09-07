@@ -621,5 +621,47 @@ namespace MoreCompany
         {
             __instance.allPlayerScripts[playerObjectNumber].gameObject.SetActive(false);
         }
+
+
+        // [Host] Notify the player that they were kicked
+        [HarmonyPatch(typeof(StartOfRound), "KickPlayer")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> KickPlayer_Reason(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            bool foundClientId = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
+            {
+                if (!alreadyReplaced)
+                {
+                    if (!foundClientId && instruction.opcode == OpCodes.Ldfld && instruction.operand?.ToString() == "System.UInt64 actualClientId")
+                    {
+                        foundClientId = true;
+                        newInstructions.Add(instruction);
+
+                        CodeInstruction kickReason = new CodeInstruction(OpCodes.Ldstr, "You have been kicked.");
+                        newInstructions.Add(kickReason);
+
+                        continue;
+                    }
+                    else if (foundClientId && instruction.opcode == OpCodes.Callvirt && instruction.operand?.ToString() == "Void DisconnectClient(UInt64)")
+                    {
+                        alreadyReplaced = true;
+                        instruction.operand = AccessTools.Method(typeof(NetworkManager), "DisconnectClient", new Type[] { typeof(UInt64), typeof(string) });
+                    }
+                }
+
+                newInstructions.Add(instruction);
+            }
+
+            if (!alreadyReplaced)
+            {
+                MainClass.StaticLogger.LogWarning("KickPlayer failed to append reason");
+                return instructions.AsEnumerable();
+            }
+
+            return newInstructions.AsEnumerable();
+        }
     }
 }

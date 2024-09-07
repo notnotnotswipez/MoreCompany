@@ -78,11 +78,11 @@ namespace MoreCompany
             foreach (LobbySlot lobbySlot in lobbySlots)
             {
                 lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
-                AddButtonToCopyLobbyCode(lobbySlot.GetComponentInChildren<Button>(), lobbySlot.lobbyId.Value.ToString());
+                AddButtonToCopyLobbyCode(lobbySlot.GetComponentInChildren<Button>(), lobbySlot.lobbyId.Value.ToString(), ["Code", "Copied", "Invalid"]);
             }
         }
 
-        internal static void AddButtonToCopyLobbyCode(Button LobbyJoinBtn, string lobbyCodeStr)
+        internal static void AddButtonToCopyLobbyCode(Button LobbyJoinBtn, string lobbyCodeStr, string[] textLabels)
         {
             if (LobbyJoinBtn != null)
             {
@@ -91,9 +91,9 @@ namespace MoreCompany
                 RectTransform rectTransform = CopyCodeButton.GetComponent<RectTransform>();
                 rectTransform.anchoredPosition -= new Vector2(78f, 0f);
                 var LobbyCodeTextMesh = CopyCodeButton.GetComponentInChildren<TextMeshProUGUI>();
-                LobbyCodeTextMesh.text = "Code";
+                LobbyCodeTextMesh.text = textLabels[0];
                 CopyCodeButton.onClick = new Button.ButtonClickedEvent();
-                CopyCodeButton.onClick.AddListener(() => CopyLobbyCodeToClipboard(lobbyCodeStr, LobbyCodeTextMesh, ["Code", "Copied", "Invalid"]));
+                CopyCodeButton.onClick.AddListener(() => CopyLobbyCodeToClipboard(lobbyCodeStr, LobbyCodeTextMesh, textLabels));
             }
         }
 

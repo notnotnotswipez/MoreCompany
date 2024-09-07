@@ -143,7 +143,7 @@ namespace MoreCompany.LANDiscovery
                 {
                     JoinButton.onClick = new Button.ButtonClickedEvent();
                     JoinButton.onClick.AddListener(componentInChildren.JoinButton);
-                    LoadLobbyListAndFilterPatch.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}");
+                    LoadLobbyListAndFilterPatch.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}", ["Copy IP", "Copied", "Invalid"]);
                 }
 
                 componentInChildren.thisLobby = lobbyList[i];

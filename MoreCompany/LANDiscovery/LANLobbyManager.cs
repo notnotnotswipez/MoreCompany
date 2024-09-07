@@ -91,7 +91,7 @@ namespace MoreCompany.LANDiscovery
             }
             else
             {
-                Debug.Log("Lobby list is null after request.");
+                MainClass.StaticLogger.LogInfo("Lobby list is null after request.");
                 __instance.serverListBlankText.text = "No available servers to join.";
             }
         }
@@ -102,14 +102,14 @@ namespace MoreCompany.LANDiscovery
                 string lobbyName = lobbyList[i].GetData("name");
                 if (lobbyName.Length == 0)
                 {
-                    Debug.Log("lobby name is length of 0, skipping");
+                    MainClass.StaticLogger.LogInfo("lobby name is length of 0, skipping");
                     continue;
                 }
 
                 string lobbyNameNoCapitals = lobbyName.ToLower();
                 if (__instance.censorOffensiveLobbyNames && offensiveWords.Any(x => lobbyNameNoCapitals.Contains(x)))
                 {
-                    Debug.Log("Lobby name is offensive: " + lobbyNameNoCapitals + "; skipping");
+                    MainClass.StaticLogger.LogInfo("Lobby name is offensive: " + lobbyNameNoCapitals + "; skipping");
                     continue;
                 }
 
@@ -134,6 +134,7 @@ namespace MoreCompany.LANDiscovery
                 if (componentInChildren.HostName)
                 {
                     componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}:{lobbyList[i].Port}";
+                    componentInChildren.HostName.transform.localPosition = new Vector3(62f, -18.2f, -4.2f);
                     componentInChildren.HostName.gameObject.SetActive(true);
                 }
 
@@ -142,6 +143,7 @@ namespace MoreCompany.LANDiscovery
                 {
                     JoinButton.onClick = new Button.ButtonClickedEvent();
                     JoinButton.onClick.AddListener(componentInChildren.JoinButton);
+                    LoadLobbyListAndFilterPatch.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}");
                 }
 
                 componentInChildren.thisLobby = lobbyList[i];

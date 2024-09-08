@@ -142,6 +142,20 @@ namespace MoreCompany
 
             CosmeticRegistry.SpawnCosmeticGUI(true);
         }
+
+        public static bool lanWarningShown = false;
+        [HarmonyPatch(typeof(MenuManager), "Start")]
+        [HarmonyPostfix]
+        public static void Start_Postfix(MenuManager __instance)
+        {
+            if (!__instance.isInitScene && GameNetworkManager.Instance.disableSteam)
+            {
+                if (lanWarningShown)
+                    __instance.lanWarningContainer.SetActive(false);
+                else
+                    lanWarningShown = true;
+            }
+        }
     }
 
 	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]

@@ -35,6 +35,7 @@ namespace MoreCompany
 	}
 
     [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
+    [HarmonyPriority(Priority.Last)]
     public static class MenuManagerHost
     {
         public static void Postfix(MenuManager __instance)

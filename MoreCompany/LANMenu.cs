@@ -148,7 +148,6 @@ namespace MoreCompany
         private static void LAN_HostSetAllowRemoteConnections(MenuManager __instance)
         {
             __instance.hostSettings_LobbyPublic = true;
-            __instance.privatePublicDescription.text = "PUBLIC means your game will be joinable by anyone on your network.";
         }
 
         [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
@@ -156,7 +155,6 @@ namespace MoreCompany
         private static void LAN_HostSetLocal(MenuManager __instance)
         {
             __instance.hostSettings_LobbyPublic = false;
-            __instance.privatePublicDescription.text = "PRIVATE means your game will only be joinable from your local machine.";
         }
 
         [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]

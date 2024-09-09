@@ -12,7 +12,7 @@ namespace MoreCompany
     {
         public static void Postfix(MenuManager __instance)
         {
-            if (__instance.versionNumberText != null)
+            if (!__instance.isInitScene && __instance.versionNumberText != null)
             {
                 __instance.versionNumberText.text = string.Format("{0} (MC)", __instance.versionNumberText.text);
             }

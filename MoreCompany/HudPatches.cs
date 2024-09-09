@@ -100,22 +100,27 @@ namespace MoreCompany
         }
     }
 
-    [HarmonyPatch(typeof(MenuManager), "Awake")]
+    [HarmonyPatch]
 	public static class MenuManagerPatch
     {
-        public static void Postfix(MenuManager __instance)
+        [HarmonyPatch(typeof(MenuManager), "Awake")]
+        [HarmonyPostfix]
+        public static void Awake_Postfix(MenuManager __instance)
         {
+            if (__instance.isInitScene) return;
+
             // Add the MoreCompany logo
             try
             {
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
-
                 GameObject parent = __instance.transform.parent.gameObject;
+
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
                     mainLogo.gameObject.GetComponent<Image>().sprite = logoImage;
                 }
+
                 Transform loadingScreen = parent.transform.Find("MenuContainer/LoadingScreen");
                 if (loadingScreen != null)
                 {

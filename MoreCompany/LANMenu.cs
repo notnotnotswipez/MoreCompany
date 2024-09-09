@@ -17,11 +17,10 @@ namespace MoreCompany
             var startLAN_button = GameObject.Find("Canvas/MenuContainer/MainButtons/StartLAN");
             if (startLAN_button != null)
             {
-                MainClass.StaticLogger.LogInfo("LANMenu startLAN Patched");
                 startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
                 startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
+                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings")?.gameObject?.SetActive(true);
                 });
             }
 

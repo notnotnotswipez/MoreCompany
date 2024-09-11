@@ -42,3 +42,6 @@
 # Explicit exceptions/ignores
 **.user
 !**.template.*.user
+
+# Thunderstore folder
+!/.thunderstore

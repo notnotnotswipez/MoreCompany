@@ -43,7 +43,7 @@ namespace MoreCompany
             Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
             if (lobbyHostOptions != null)
             {
-                Transform parent = lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal");
+                Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
                 if (parent != null)
                 {
                     MainClass.actualPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;

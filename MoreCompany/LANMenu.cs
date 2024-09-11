@@ -162,17 +162,10 @@ namespace MoreCompany
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                __instance.hostSettings_LobbyPublic = setPublic;
-                __instance.lanSetLocalButtonAnimator.SetBool("isPressed", !setPublic);
-                __instance.lanSetAllowRemoteButtonAnimator.SetBool("isPressed", setPublic);
                 if (setPublic)
-                {
                     __instance.LAN_HostSetAllowRemoteConnections();
-                }
                 else
-                {
                     __instance.LAN_HostSetLocal();
-                }
             }
         }
     }

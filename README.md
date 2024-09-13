@@ -20,8 +20,6 @@ In the development of MoreCompany, I had stability and polish in mind, I wanted 
 
 In my testing of an 8 player lobby, I experienced no issues nor did anyone else in the lobby. A lot of game conditions were tested, but there may be conditions which were not tested that may be broken or cause a softlock.
 
-This mod is not affiliated with [BiggerLobby](https://thunderstore.io/c/lethal-company/p/bizzlemip/BiggerLobby/)/[LethalPlayers](https://thunderstore.io/c/lethal-company/p/Lightmaxifrvr/LethalPlayers/) nor does it use any code from that mod! Any similarities are purely coincidental.
-
 # Installation
 MoreCompany **must** be installed on both the server / host and all connecting clients.
 ## [Thunderstore](https://www.overwolf.com/app/Thunderstore-Thunderstore_Mod_Manager) / [R2modman](https://r2modman.net/)

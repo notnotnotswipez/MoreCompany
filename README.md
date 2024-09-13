@@ -16,7 +16,7 @@ MoreCompany expands Lethal Company's max player count for larger player lobbies 
 If you encounter any issues with the mod, please report them on the [MoreCompany Discord](https://discord.gg/cKa6sPBFZ9) or via the [GitHub Issue Tracker](https://github.com/notnotnotswipez/MoreCompany/issues). Please ensure you check for known issues on the [GitHub Issue Tracker](https://github.com/notnotnotswipez/MoreCompany/issues) or [`CHANGELOG.md`](https://github.com/notnotnotswipez/MoreCompany/blob/master/CHANGELOG.md) BEFORE reporting.
 
 # Why choose MoreCompany?
-Although there is another mod that does a very similar thing, it has a few stability issues regarding the functionality of the game. In the development of MoreCompany, I had stability and polish in mind, I wanted to make a relatively frictionless experience regarding expanded player counts.
+In the development of MoreCompany, I had stability and polish in mind, I wanted to make a relatively frictionless experience regarding expanded player counts.
 
 In my testing of an 8 player lobby, I experienced no issues nor did anyone else in the lobby. A lot of game conditions were tested, but there may be conditions which were not tested that may be broken or cause a softlock.
 

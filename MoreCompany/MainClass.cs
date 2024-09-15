@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -510,14 +511,15 @@ namespace MoreCompany
     {
         public static void Postfix(ref GameNetworkManager __instance)
         {
+            string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
+            List<string> newData = [origString];
             if (__instance.disableSteam)
-            {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + MainClass.actualPlayerCount);
-            }
+                newData.Add($"maxslots:{MainClass.actualPlayerCount}");
             else
-            {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum + "," + (ulong)SteamClient.SteamId + ",morecompany");
-            }
+                newData.Add("maxslots:-1");
+
+            string newString = string.Join(',', newData);
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(newString);
         }
     }
 
@@ -566,14 +568,16 @@ namespace MoreCompany
                 {
                     if (__instance.disableSteam)
                     {
-                        if (array.Length > 1 && int.TryParse(array[1], out int tmpCrewSize) && tmpCrewSize > 0)
+                        if (array.Any(x => Regex.IsMatch(x, @"^maxslots:\d+$")))
                         {
-                            joinerCrewSize = tmpCrewSize;
+                            string value = array.First(x => Regex.IsMatch(x, @"^maxslots:\d+$"));
+                            int parsedValue = int.Parse(value.Substring(9));
+                            joinerCrewSize = parsedValue;
                         }
                     }
                     else
                     {
-                        if (array.Length > 2 && array[2] == "morecompany")
+                        if (array.Contains("maxslots:-1"))
                         {
                             joinerCrewSize = MainClass.actualPlayerCount;
                         }

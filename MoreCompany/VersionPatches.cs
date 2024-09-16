@@ -32,6 +32,8 @@ namespace MoreCompany
             {
                 lobby.SetData("tag", "morecompany");
             }
+
+            lobby.SetData("mc_maxplayers", lobby.MaxMembers.ToString());
         }
     }
 
@@ -40,7 +42,7 @@ namespace MoreCompany
     {
         [HarmonyPatch("ApplyFilters")]
         [HarmonyPrefix]
-        public static void ApplyFilters_Prefix(Dictionary<string, string> ___stringFilters)
+        public static void ApplyFilters_Prefix(ref LobbyQuery __instance)
         {
             if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
@@ -50,14 +52,16 @@ namespace MoreCompany
                 {
                     shouldReplaceTag = steamLobbyManager.serverTagInputField.text == string.Empty;
                 }
-                else if (!___stringFilters.ContainsKey("tag") || ___stringFilters["tag"] == "none")
+                else if (__instance.stringFilters == null || !__instance.stringFilters.ContainsKey("tag") || __instance.stringFilters["tag"] == "none")
                 {
                     shouldReplaceTag = true;
                 }
                 if (shouldReplaceTag)
                 {
-                    ___stringFilters.Remove("tag");
-                    ___stringFilters.Add("tag", "morecompany");
+                    if (__instance.stringFilters != null && __instance.stringFilters.ContainsKey("tag"))
+                        __instance.stringFilters.Remove("tag");
+
+                    __instance.WithKeyValue("tag", "morecompany");
                 }
             }
         }

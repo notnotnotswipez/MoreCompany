@@ -38,40 +38,52 @@ namespace MoreCompany
     [HarmonyPriority(Priority.Last)]
     public static class MenuManagerHost
     {
+        public static void SetupCrewCountInput(TMP_InputField inputField)
+        {
+            inputField.text = MainClass.actualPlayerCount.ToString();
+
+            if (!inputField.transform.Find("Registered"))
+            {
+                inputField.onSubmit.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+                inputField.onDeselect.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+
+                GameObject registered = new GameObject("Registered");
+                registered.transform.parent = inputField.transform;
+            }
+        }
+
         public static void Postfix(MenuManager __instance)
         {
-            Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
-            if (lobbyHostOptions != null)
-            {
-                Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
-                if (parent != null)
-                {
-                    MainClass.actualPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
-                    MainClass.newPlayerCount = MainClass.actualPlayerCount;
+            MainClass.actualPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+            MainClass.newPlayerCount = MainClass.actualPlayerCount;
 
-                    if (parent.Find("CrewCount"))
-                    {
-                        TMP_InputField inputField = parent.Find("CrewCount").Find("InputField (TMP)").GetComponent<TMP_InputField>();
-                        inputField.text = MainClass.actualPlayerCount.ToString();
-                    }
-                    else
+            if (GameObject.Find("MC_CrewCount"))
+            {
+                TMP_InputField inputField = GameObject.Find("MC_CrewCount").GetComponentInChildren<TMP_InputField>();
+                SetupCrewCountInput(inputField);
+            }
+            else
+            {
+                Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
+                if (lobbyHostOptions != null)
+                {
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
+                    if (parent != null)
                     {
                         GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
-                        createdCrewUI.name = "CrewCount";
+                        createdCrewUI.name = "MC_CrewCount";
                         RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
                         rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
 
-                        TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
+                        TMP_InputField inputField = createdCrewUI.transform.GetComponentInChildren<TMP_InputField>();
                         inputField.characterLimit = 3;
-                        inputField.text = MainClass.actualPlayerCount.ToString();
-                        inputField.onSubmit.AddListener(s =>
-                        {
-                            UpdateTextBox(inputField, s);
-                        });
-                        inputField.onDeselect.AddListener(s =>
-                        {
-                            UpdateTextBox(inputField, s);
-                        });
+                        SetupCrewCountInput(inputField);
                     }
                 }
             }

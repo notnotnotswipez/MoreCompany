@@ -33,7 +33,7 @@ namespace MoreCompany
                 lobby.SetData("tag", "morecompany");
             }
 
-            lobby.SetData("mc_maxplayers", lobby.MaxMembers.ToString());
+            lobby.SetData("maxplayers", lobby.MaxMembers.ToString());
         }
     }
 
@@ -44,7 +44,7 @@ namespace MoreCompany
         [HarmonyPrefix]
         public static void ApplyFilters_Prefix(ref LobbyQuery __instance)
         {
-            if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility") && !Chainloader.PluginInfos.ContainsKey("Dev1A3.LobbyImprovements"))
             {
                 bool shouldReplaceTag = false;
                 SteamLobbyManager steamLobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();

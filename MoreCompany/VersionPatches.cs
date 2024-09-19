@@ -44,7 +44,8 @@ namespace MoreCompany
         [HarmonyPrefix]
         public static void ApplyFilters_Prefix(ref LobbyQuery __instance)
         {
-            if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility") && !Chainloader.PluginInfos.ContainsKey("Dev1A3.LobbyImprovements"))
+            if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility") &&
+                !Chainloader.PluginInfos.ContainsKey("Dev1A3.LobbyImprovements"))
             {
                 bool shouldReplaceTag = false;
                 SteamLobbyManager steamLobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();

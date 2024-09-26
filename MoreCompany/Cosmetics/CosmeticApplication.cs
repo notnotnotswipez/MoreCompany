@@ -14,6 +14,16 @@ namespace MoreCompany.Cosmetics
         public Transform shinLeft;
         public Transform shinRight;
         public Transform chest;
+        public Transform upperArmLeft;
+        public Transform upperArmRight;
+        public Transform lowerArmLeft;
+        public Transform handLeft;
+        public Transform handRight;
+        public Transform thighLeft;
+        public Transform thighRight;
+        public Transform footLeft;
+        public Transform footRight;
+
         public List<CosmeticInstance> spawnedCosmetics = new List<CosmeticInstance>();
 
         public void Awake()
@@ -25,6 +35,15 @@ namespace MoreCompany.Cosmetics
             hip = spine;
             shinLeft = spine.Find("thigh.L").Find("shin.L");
             shinRight = spine.Find("thigh.R").Find("shin.R");
+            upperArmLeft = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper");
+            upperArmRight = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper");
+            lowerArmLeft = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower");
+            handLeft = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+            handRight = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+            thighLeft = spine.Find("thigh.L");
+            thighRight = spine.Find("thigh.R");
+            footLeft = spine.Find("thigh.L").Find("shin.L").Find("foot.L");
+            footRight = spine.Find("thigh.R").Find("shin.R").Find("foot.R");
 
             RefreshAllCosmeticPositions();
         }
@@ -101,6 +120,33 @@ namespace MoreCompany.Cosmetics
                     break;
                 case CosmeticType.CHEST:
                     targetTransform = chest;
+                    break;
+                case CosmeticType.L_UPPER_ARM:
+                    targetTransform = upperArmLeft;
+                    break;
+                case CosmeticType.R_UPPER_ARM:
+                    targetTransform = upperArmRight;
+                    break;
+                case CosmeticType.L_LOWER_ARM:
+                    targetTransform = lowerArmLeft;
+                    break;
+                case CosmeticType.L_HAND:
+                    targetTransform = handLeft;
+                    break;
+                case CosmeticType.R_HAND:
+                    targetTransform = handRight;
+                    break;
+                case CosmeticType.L_THIGH:
+                    targetTransform = thighLeft;
+                    break;
+                case CosmeticType.R_THIGH:
+                    targetTransform = thighRight;
+                    break;
+                case CosmeticType.L_FOOT:
+                    targetTransform = footLeft;
+                    break;
+                case CosmeticType.R_FOOT:
+                    targetTransform = footRight;
                     break;
             }
 

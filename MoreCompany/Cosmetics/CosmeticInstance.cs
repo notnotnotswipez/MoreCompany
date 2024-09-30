@@ -44,8 +44,6 @@ namespace MoreCompany.Cosmetics
         L_UPPER_ARM,
         R_UPPER_ARM,
         L_LOWER_ARM,
-        L_HAND,
-        R_HAND,
         L_THIGH,
         R_THIGH,
         L_FOOT,

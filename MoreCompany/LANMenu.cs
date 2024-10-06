@@ -103,19 +103,6 @@ namespace MoreCompany
         }
     }
 
-    // Crew Size Mismatch
-    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
-    public static class ConnectionDataPatch
-    {
-        public static void Postfix(ref GameNetworkManager __instance)
-        {
-            if (__instance.disableSteam)
-            {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum.ToString() + "," + MainClass.newPlayerCount);
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(GameNetworkManager), "OnLocalClientConnectionDisapproved")]
     public static class ConnectionDisapprovedPatch
     {
@@ -127,7 +114,7 @@ namespace MoreCompany
             yield break;
         }
 
-        private static void Prefix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Prefix(GameNetworkManager __instance, ulong clientId)
         {
             crewSizeMismatch = 0;
             if (__instance.disableSteam)
@@ -142,7 +129,7 @@ namespace MoreCompany
                 catch { }
             }
         }
-        private static void Postfix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Postfix(GameNetworkManager __instance, ulong clientId)
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {

@@ -211,7 +211,7 @@ namespace MoreCompany.Cosmetics
             }
         }
 
-        private static void RecursiveLayerChange(Transform transform, int layer)
+        public static void RecursiveLayerChange(Transform transform, int layer)
         {
             transform.gameObject.layer = layer;
             for (int i = 0; i < transform.childCount; i++)

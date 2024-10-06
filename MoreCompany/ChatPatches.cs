@@ -30,7 +30,7 @@ namespace MoreCompany
     public static class CosmeticSyncPatch
     {
         // This method runs whenever a player's cosmetics are updated
-        public static void UpdateCosmeticsForPlayer(int playerClientId, List<string> splitMessage, bool showOwnCosmetics = false)
+        public static void UpdateCosmeticsForPlayer(int playerClientId, List<string> splitMessage)
         {
             CosmeticApplication cosmeticApplication = StartOfRound.Instance.allPlayerScripts[playerClientId].transform.Find("ScavengerModel")
                 .Find("metarig").gameObject.GetComponent<CosmeticApplication>();
@@ -41,24 +41,24 @@ namespace MoreCompany
                 .Find("metarig").gameObject.AddComponent<CosmeticApplication>();
             }
 
-            cosmeticApplication.ClearCosmetics();
+            cosmeticApplication.parentType = ParentType.Player;
 
+            cosmeticApplication.ClearCosmetics();
             List<string> cosmeticsToApply = new List<string>();
             foreach (string cosmeticId in splitMessage)
             {
-                cosmeticsToApply.Add(cosmeticId);
-                cosmeticApplication.ApplyCosmetic(cosmeticId, MainClass.cosmeticsSyncOther.Value);
-            }
-
-            if (playerClientId == StartOfRound.Instance.thisClientPlayerId && !showOwnCosmetics)
-            {
-                cosmeticApplication.ClearCosmetics();
+                if (cosmeticApplication.ApplyCosmetic(cosmeticId, false))
+                {
+                    cosmeticsToApply.Add(cosmeticId);
+                }
             }
 
             foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
             {
                 cosmeticSpawned.transform.localScale *= CosmeticRegistry.COSMETIC_PLAYER_SCALE_MULT;
             }
+
+            cosmeticApplication.UpdateAllCosmeticVisibilities(playerClientId == StartOfRound.Instance.thisClientPlayerId);
 
             if (MainClass.playerIdsAndCosmetics.ContainsKey(playerClientId))
             {

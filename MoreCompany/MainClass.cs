@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -79,11 +80,7 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.gameObject.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsSyncOther.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities((int)playerController.playerClientId == StartOfRound.Instance.thisClientPlayerId);
                 }
             };
 
@@ -95,11 +92,7 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsDeadBodies.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities(false);
                 }
             };
 
@@ -111,11 +104,7 @@ namespace MoreCompany
                     CosmeticApplication cosmeticApplication = cosmeticRoot.GetComponent<CosmeticApplication>();
                     if (cosmeticApplication == null) continue;
 
-                    foreach (var spawnedCosmetic in cosmeticApplication.spawnedCosmetics)
-                    {
-                        if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && cosmeticApplication.detachedHead) continue;
-                        spawnedCosmetic.gameObject.SetActive(cosmeticsMaskedEnemy.Value);
-                    }
+                    cosmeticApplication.UpdateAllCosmeticVisibilities(false);
                     maskedEnemy.skinnedMeshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                     maskedEnemy.meshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<MeshRenderer>();
                 }
@@ -272,29 +261,25 @@ namespace MoreCompany
             StartOfRound round = StartOfRound.Instance;
             if (round.allPlayerObjects.Length != newPlayerCount)
             {
-                StaticLogger.LogInfo($"ResizePlayerCache: {newPlayerCount}");
                 uint starting = 10000;
 
                 int originalLength = round.allPlayerObjects.Length;
 
                 int difference = newPlayerCount - originalLength;
 
+                StaticLogger.LogInfo($"Resizing arrays from {originalLength} to {newPlayerCount} with difference of {difference}");
+
                 Array.Resize(ref round.allPlayerObjects, newPlayerCount);
                 Array.Resize(ref round.allPlayerScripts, newPlayerCount);
                 Array.Resize(ref round.gameStats.allPlayerStats, newPlayerCount);
                 Array.Resize(ref round.playerSpawnPositions, newPlayerCount);
 
-                StaticLogger.LogInfo($"Resizing player cache from {originalLength} to {newPlayerCount} with difference of {difference}");
-
                 if (difference > 0)
                 {
-                    //GameObject playerPrefab = round.playerPrefab;
-                    //GameObject firstPlayerObject = round.allPlayerObjects[0];
-                    GameObject firstPlayerObject = round.allPlayerObjects[3];
+                    GameObject firstPlayerObject = round.allPlayerObjects[originalLength - 1];
                     for (int i = 0; i < difference; i++)
                     {
                         uint newId = starting + (uint)i;
-                        //GameObject copy = GameObject.Instantiate(playerPrefab, firstPlayerObject.transform.parent);
                         GameObject copy = GameObject.Instantiate(firstPlayerObject, firstPlayerObject.transform.parent);
                         NetworkObject copyNetworkObject = copy.GetComponent<NetworkObject>();
                         ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", (uint) newId);
@@ -312,12 +297,12 @@ namespace MoreCompany
                         }
                         ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
 
-                        copy.name = $"Player ({4 + i})";
+                        copy.name = $"Player ({originalLength + i})";
 
                         PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
 
                         // Reset
-                        newPlayerScript.playerClientId = (ulong)(4 + i);
+                        newPlayerScript.playerClientId = (ulong)(originalLength + i);
                         newPlayerScript.playerUsername = $"Player #{newPlayerScript.playerClientId}";
                         newPlayerScript.isPlayerControlled = false;
                         newPlayerScript.isPlayerDead = false;
@@ -537,6 +522,23 @@ namespace MoreCompany
         }
     }
 
+    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
+    public static class ConnectionDataPatch
+    {
+        public static void Postfix(ref GameNetworkManager __instance)
+        {
+            string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
+            List<string> newData = [origString];
+            if (__instance.disableSteam)
+                newData.Add($"maxslots:{MainClass.newPlayerCount}");
+            else
+                newData.Add("maxslots:-1");
+
+            string newString = string.Join(',', newData);
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(newString);
+        }
+    }
+
     [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
     public static class ConnectionApproval
     {
@@ -572,14 +574,35 @@ namespace MoreCompany
 
         private static void Postfix(ref GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
         {
-            // LAN Crew Size Mismatch
-            if (response.Approved && __instance.disableSteam)
+            // Crew Size Mismatch
+            if (response.Approved)
             {
                 string @string = Encoding.ASCII.GetString(request.Payload);
                 string[] array = @string.Split(",");
-                if (!string.IsNullOrEmpty(@string) && (array.Length < 2 || array[1] != MainClass.newPlayerCount.ToString()))
+                int joinerCrewSize = 4;
+                if (!string.IsNullOrEmpty(@string))
                 {
-                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {array[1]}";
+                    if (__instance.disableSteam)
+                    {
+                        if (array.Any(x => Regex.IsMatch(x, @"^maxslots:\d+$")))
+                        {
+                            string value = array.First(x => Regex.IsMatch(x, @"^maxslots:\d+$"));
+                            int parsedValue = int.Parse(value.Substring(9));
+                            joinerCrewSize = parsedValue;
+                        }
+                    }
+                    else
+                    {
+                        if (array.Contains("maxslots:-1"))
+                        {
+                            joinerCrewSize = MainClass.newPlayerCount;
+                        }
+                    }
+                }
+
+                if (response.Approved && MainClass.newPlayerCount > 4 && MainClass.newPlayerCount != joinerCrewSize)
+                {
+                    response.Reason = $"Crew size mismatch! Their size: {MainClass.newPlayerCount}. Your size: {joinerCrewSize}";
                     response.Approved = false;
                 }
             }

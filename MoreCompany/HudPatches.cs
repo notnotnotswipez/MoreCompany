@@ -34,6 +34,87 @@ namespace MoreCompany
 		}
 	}
 
+
+    [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
+    [HarmonyPriority(Priority.Last)]
+    public static class MenuManagerHost
+    {
+        public static void UpdateTextBox(TMP_InputField inputField, string s)
+        {
+            if (inputField.text == MainClass.newPlayerCount.ToString())
+                return;
+
+            if (int.TryParse(s, out int result))
+            {
+                int originalCount = MainClass.newPlayerCount;
+                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.StaticConfig.Save();
+                inputField.text = MainClass.newPlayerCount.ToString();
+                if (MainClass.newPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+            }
+            else if (s.Length != 0)
+            {
+                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.caretPosition = 1;
+            }
+        }
+
+        public static void SetupCrewCountInput(TMP_InputField inputField)
+        {
+            inputField.text = MainClass.newPlayerCount.ToString();
+
+            if (!inputField.transform.Find("Registered"))
+            {
+                inputField.onSubmit.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+                inputField.onDeselect.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+
+                GameObject registered = new GameObject("Registered");
+                registered.transform.parent = inputField.transform;
+            }
+        }
+
+        public static void CreateCrewCountInput(MenuManager __instance)
+        {
+            if (GameObject.Find("MC_CrewCount"))
+            {
+                TMP_InputField inputField = GameObject.Find("MC_CrewCount").GetComponentInChildren<TMP_InputField>();
+                SetupCrewCountInput(inputField);
+            }
+            else
+            {
+                Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
+                if (lobbyHostOptions != null)
+                {
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
+                    if (parent != null)
+                    {
+                        GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
+                        createdCrewUI.name = "MC_CrewCount";
+                        RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
+                        rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
+
+                        TMP_InputField inputField = createdCrewUI.transform.GetComponentInChildren<TMP_InputField>();
+                        inputField.characterLimit = 3;
+                        SetupCrewCountInput(inputField);
+                    }
+                }
+            }
+        }
+
+        public static void Postfix(MenuManager __instance)
+        {
+            MainClass.newPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+            CreateCrewCountInput(__instance);
+        }
+    }
+
     [HarmonyPatch]
     public static class MenuManagerLogoOverridePatch
     {
@@ -41,8 +122,11 @@ namespace MoreCompany
 
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Awake_Postfix(MenuManager __instance)
         {
+            if (__instance.isInitScene) return;
+
             MainClass.ReadSettingsFromFile();
 
             // Add the MoreCompany logo
@@ -51,11 +135,13 @@ namespace MoreCompany
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
 
                 GameObject parent = __instance.transform.parent.gameObject;
+
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
                     mainLogo.gameObject.GetComponent<Image>().sprite = logoImage;
                 }
+
                 Transform loadingScreen = parent.transform.Find("MenuContainer/LoadingScreen");
                 if (loadingScreen != null)
                 {
@@ -72,18 +158,9 @@ namespace MoreCompany
                 MainClass.StaticLogger.LogError(e);
 			}
 
-            // Add the crew count input
             try
             {
                 LANMenu.InitializeMenu();
-                inputFields.Clear();
-                GameObject parent = __instance.transform.parent.gameObject;
-                Transform lobbyHostOptions = parent.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
-                if (lobbyHostOptions != null)
-                    CreateCrewCountInput(lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
-                Transform lobbyJoinOptions = parent.transform.Find("MenuContainer/LobbyJoinSettings/JoinSettingsContainer/LobbyJoinOptions");
-                if (lobbyJoinOptions != null)
-                    CreateCrewCountInput(lobbyJoinOptions.Find("LANOptions"));
             }
             catch (Exception e)
             {
@@ -91,49 +168,6 @@ namespace MoreCompany
             }
 
             CosmeticRegistry.SpawnCosmeticGUI(true);
-        }
-
-        private static void CreateCrewCountInput(Transform parent)
-        {
-            GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
-            RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
-
-            TMP_InputField inputField = createdCrewUI.transform.Find("InputField (TMP)").GetComponent<TMP_InputField>();
-            inputField.characterLimit = 3;
-            inputField.text = MainClass.newPlayerCount.ToString();
-            inputFields.Add(inputField);
-            inputField.onSubmit.AddListener(s => {
-                UpdateTextBox(inputField, s);
-            });
-            inputField.onDeselect.AddListener(s => {
-                UpdateTextBox(inputField, s);
-            });
-        }
-
-        public static void UpdateTextBox(TMP_InputField inputField, string s)
-        {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
-                return;
-
-            if (int.TryParse(s, out int result))
-            {
-                int originalCount = MainClass.newPlayerCount;
-                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                foreach (TMP_InputField field in inputFields)
-                    field.text = MainClass.newPlayerCount.ToString();
-                MainClass.SaveSettingsToFile();
-                if (MainClass.newPlayerCount != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
-            }
-            else if (s.Length != 0)
-            {
-                foreach (TMP_InputField field in inputFields)
-                {
-                    field.text = MainClass.newPlayerCount.ToString();
-                    field.caretPosition = 1;
-                }
-            }
         }
 
         public static bool lanWarningShown = false;
@@ -274,7 +308,7 @@ namespace MoreCompany
                             SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
                         }
                     });
-                    playerVolume.value = Math.Clamp((SoundManager.Instance.playerVoiceVolumes[i] * (playerVolume.maxValue - playerVolume.minValue)) + playerVolume.minValue, playerVolume.minValue, playerVolume.maxValue);
+                    playerVolume.value = Mathf.Clamp((SoundManager.Instance.playerVoiceVolumes[i] * (playerVolume.maxValue - playerVolume.minValue)) + playerVolume.minValue, playerVolume.minValue, playerVolume.maxValue);
 
                     Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
                     kickButton.onClick.AddListener(() =>

@@ -22,10 +22,6 @@ namespace MoreCompany
                 startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
                 startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                    if (footerText != null)
-                        footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
-
                     GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
                 });
             }
@@ -91,10 +87,6 @@ namespace MoreCompany
                         });
                     }
                 }
-
-                TextMeshProUGUI footerText = lanSubMenu.transform.Find("PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                if (footerText != null)
-                    footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
 
                 lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions").gameObject.SetActive(true);
             }

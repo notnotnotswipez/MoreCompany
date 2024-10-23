@@ -21,7 +21,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.10.0";
+        public const string PLUGIN_VERSION = "1.10.1";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 

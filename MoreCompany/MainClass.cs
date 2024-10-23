@@ -22,7 +22,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.10.0";
+        public const string PLUGIN_VERSION = "1.10.1";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -309,7 +309,6 @@ namespace MoreCompany
 
                         newPlayerScript.DropAllHeldItems(false, false);
                         newPlayerScript.TeleportPlayer(round.notSpawnedPosition.position, false, 0f, false, true);
-                        UnlockableSuit.SwitchSuitForPlayer(newPlayerScript, 0, false);
 
                         // Set new player object
                         round.allPlayerObjects[originalLength + i] = copy;

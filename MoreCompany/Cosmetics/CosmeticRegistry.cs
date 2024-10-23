@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using MoreCompany.Utils;
 using UnityEngine;
@@ -9,15 +10,16 @@ namespace MoreCompany.Cosmetics
     public class CosmeticRegistry
     {
         public static Dictionary<string, CosmeticInstance> cosmeticInstances = new Dictionary<string, CosmeticInstance>();
-        
-        public static GameObject cosmeticGUI;
+
+        public static Transform cosmeticGUIGlobalScale;
         private static GameObject displayGuy;
-        private static CosmeticApplication cosmeticApplication;
+        internal static CosmeticApplication displayGuyCosmeticApplication;
         public static List<string> locallySelectedCosmetics = new List<string>();
+        public static bool menuIsInGame = false;
 
         public const float COSMETIC_PLAYER_SCALE_MULT = 0.38f;
 
-        public static void LoadCosmeticsFromBundle(AssetBundle bundle)
+        public static void LoadCosmeticsFromBundle(AssetBundle bundle, string bundleName = null)
         {
             foreach (var potentialPrefab in bundle.GetAllAssetNames())
             {
@@ -31,17 +33,24 @@ namespace MoreCompany.Cosmetics
                 {
                     continue;
                 }
-                MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle");
-                if (cosmeticInstances.ContainsKey(cosmeticInstanceBehavior.cosmeticId))
+
+                if (MainClass.disabledCosmetics.Value.Split(',').Contains(cosmeticInstanceBehavior.cosmeticId))
                 {
-                    MainClass.StaticLogger.LogError("Duplicate cosmetic id: " + cosmeticInstanceBehavior.cosmeticId);
+                    MainClass.StaticLogger.LogInfo("Skipped cosmetic: " + cosmeticInstanceBehavior.cosmeticId + ", bundle: " + bundleName + ", reason: disabled");
                     continue;
                 }
 
+                if (cosmeticInstances.ContainsKey(cosmeticInstanceBehavior.cosmeticId))
+                {
+                    MainClass.StaticLogger.LogWarning("Skipped cosmetic: " + cosmeticInstanceBehavior.cosmeticId + ", bundle: " + bundleName + ", reason: duplicate id");
+                    continue;
+                }
+
+                MainClass.StaticLogger.LogInfo("Loaded cosmetic: " + cosmeticInstanceBehavior.cosmeticId + " from bundle: " + bundleName);
                 cosmeticInstances.Add(cosmeticInstanceBehavior.cosmeticId, cosmeticInstanceBehavior);
             }
         }
-        
+
         public static void LoadCosmeticsFromAssembly(Assembly assembly, AssetBundle bundle)
         {
             foreach (var type in assembly.GetTypes())
@@ -68,18 +77,37 @@ namespace MoreCompany.Cosmetics
             }
         }
 
-        public static void SpawnCosmeticGUI()
+        public static void SpawnCosmeticGUI(bool mainMenu)
         {
-            cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
-            cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").transform.localScale = new Vector3(2, 2, 2);
-            
-            displayGuy = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("ObjectHolder")
+            if (cosmeticInstances.Count == 0) return; // Don't spawn the ui if no cosmetics are loaded
+            menuIsInGame = !mainMenu;
+
+            GameObject cosmeticGUI = GameObject.Instantiate(MainClass.cosmeticGUIInstance);
+
+            cosmeticGUIGlobalScale = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale");
+
+            if (menuIsInGame)
+            {
+                cosmeticGUIGlobalScale.transform.parent = GameObject.Find("Systems/UI/Canvas/").transform;
+                cosmeticGUIGlobalScale.transform.localPosition = new Vector3(0.0f, 0.0f, 0.0f);
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+                GameObject.Destroy(cosmeticGUI);
+                cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder").transform.localPosition = new Vector3(210f, 0f, -100f);
+                cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder").Find("Spot Light").GetComponent<Light>().intensity = 30;
+                cosmeticGUIGlobalScale.Find("ActivateButton").gameObject.SetActive(false);
+            }
+            else
+            {
+                cosmeticGUIGlobalScale.transform.localScale = new Vector3(2, 2, 2);
+            }
+
+            displayGuy = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("ObjectHolder")
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
-            cosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
-            
-            GameObject enableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("EnableButton").gameObject;
-            GameObject disableCosmeticsButton = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("DisableButton").gameObject;
+            displayGuyCosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
+
+            GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
+            GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
             enableCosmeticsButton.GetComponent<Button>().onClick.AddListener(() =>
             {
                 MainClass.cosmeticsSyncOther.Value = true;
@@ -99,15 +127,15 @@ namespace MoreCompany.Cosmetics
 
         public static void PopulateCosmetics()
         {
-            GameObject contentHolder = cosmeticGUI.transform.Find("Canvas").Find("GlobalScale").Find("CosmeticsScreen").Find("CosmeticsHolder")
+            GameObject contentHolder = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("CosmeticsHolder")
                 .Find("Content").gameObject;
-            
+
             List<Transform> children = new List<Transform>();
             for (int i = 0; i < contentHolder.transform.childCount; i++)
             {
                 children.Add(contentHolder.transform.GetChild(i));
             }
-            
+
             foreach (var child in children)
             {
                 GameObject.Destroy(child.gameObject);
@@ -117,10 +145,10 @@ namespace MoreCompany.Cosmetics
             {
                 GameObject spawnedCosmetic = GameObject.Instantiate(MainClass.cosmeticButton, contentHolder.transform);
                 spawnedCosmetic.transform.localScale = Vector3.one;
-                
+
                 GameObject disabledOverlay = spawnedCosmetic.transform.Find("Deselected").gameObject;
                 disabledOverlay.SetActive(true);
-                
+
                 GameObject enabledOverlay = spawnedCosmetic.transform.Find("Selected").gameObject;
                 enabledOverlay.SetActive(true);
 
@@ -137,7 +165,7 @@ namespace MoreCompany.Cosmetics
 
                 RawImage iconImage = spawnedCosmetic.transform.Find("Icon").GetComponent<RawImage>();
                 iconImage.texture = cosmeticInstance.Value.icon;
-                
+
                 Button button = spawnedCosmetic.GetComponent<Button>();
                 button.onClick.AddListener(() =>
                 {
@@ -158,28 +186,31 @@ namespace MoreCompany.Cosmetics
                 });
             }
         }
-        
+
         private static Color HexToColor(string hex)
         {
-            Color color = new Color();
-            ColorUtility.TryParseHtmlString(hex, out color);
+            ColorUtility.TryParseHtmlString(hex, out Color color);
             return color;
         }
 
         public static void UpdateCosmeticsOnDisplayGuy(bool startEnabled)
         {
-            cosmeticApplication.ClearCosmetics();
+            displayGuyCosmeticApplication.ClearCosmetics();
             foreach (var selected in locallySelectedCosmetics)
             {
-                cosmeticApplication.ApplyCosmetic(selected, startEnabled);
+                displayGuyCosmeticApplication.ApplyCosmetic(selected, startEnabled);
             }
 
-            foreach (var cosmeticSpawned in cosmeticApplication.spawnedCosmetics)
+            foreach (var cosmeticSpawned in displayGuyCosmeticApplication.spawnedCosmetics)
             {
                 RecursiveLayerChange(cosmeticSpawned.transform, 5);
+                if (menuIsInGame)
+                {
+                    cosmeticSpawned.transform.localScale /= 4.3f;
+                }
             }
         }
-        
+
         private static void RecursiveLayerChange(Transform transform, int layer)
         {
             transform.gameObject.layer = layer;
@@ -193,7 +224,12 @@ namespace MoreCompany.Cosmetics
         {
             return locallySelectedCosmetics.Contains(cosmeticId);
         }
-        
+
+        public static List<string> GetCosmeticsToSync()
+        {
+            return locallySelectedCosmetics.Where(x => cosmeticInstances.ContainsKey(x)).ToList();
+        }
+
         public static void ToggleCosmetic(string cosmeticId)
         {
             if (locallySelectedCosmetics.Contains(cosmeticId))
@@ -203,6 +239,11 @@ namespace MoreCompany.Cosmetics
             else
             {
                 locallySelectedCosmetics.Add(cosmeticId);
+            }
+
+            if (StartOfRound.Instance != null && StartOfRound.Instance.localPlayerController != null)
+            {
+                CosmeticSyncPatch.SyncCosmeticsToOtherClients();
             }
         }
     }

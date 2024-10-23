@@ -34,20 +34,23 @@ namespace MoreCompany
 		}
 	}
 
-	[HarmonyPatch(typeof(MenuManager), "Awake")]
-	public static class MenuManagerLogoOverridePatch
+    [HarmonyPatch]
+    public static class MenuManagerLogoOverridePatch
     {
         public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
 
-        public static void Postfix(MenuManager __instance)
-		{
-			try
-            {
-                MainClass.ReadSettingsFromFile();
+        [HarmonyPatch(typeof(MenuManager), "Awake")]
+        [HarmonyPostfix]
+        public static void Awake_Postfix(MenuManager __instance)
+        {
+            MainClass.ReadSettingsFromFile();
 
-                GameObject parent = __instance.transform.parent.gameObject;
+            // Add the MoreCompany logo
+            try
+            {
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
 
+                GameObject parent = __instance.transform.parent.gameObject;
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");
                 if (mainLogo != null)
                 {
@@ -63,12 +66,18 @@ namespace MoreCompany
                         loadingLogo.GetComponent<Image>().sprite = logoImage;
                     }
                 }
+            }
+			catch (Exception e)
+			{
+                MainClass.StaticLogger.LogError(e);
+			}
 
-                CosmeticRegistry.SpawnCosmeticGUI();
-
-                // Add the crew count input
+            // Add the crew count input
+            try
+            {
                 LANMenu.InitializeMenu();
                 inputFields.Clear();
+                GameObject parent = __instance.transform.parent.gameObject;
                 Transform lobbyHostOptions = parent.transform.Find("MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions");
                 if (lobbyHostOptions != null)
                     CreateCrewCountInput(lobbyHostOptions.Find(GameNetworkManager.Instance.disableSteam ? "LANOptions" : "OptionsNormal"));
@@ -76,10 +85,12 @@ namespace MoreCompany
                 if (lobbyJoinOptions != null)
                     CreateCrewCountInput(lobbyJoinOptions.Find("LANOptions"));
             }
-			catch (Exception e)
-			{
+            catch (Exception e)
+            {
                 MainClass.StaticLogger.LogError(e);
-			}
+            }
+
+            CosmeticRegistry.SpawnCosmeticGUI(true);
         }
 
         private static void CreateCrewCountInput(Transform parent)
@@ -122,6 +133,20 @@ namespace MoreCompany
                     field.text = MainClass.newPlayerCount.ToString();
                     field.caretPosition = 1;
                 }
+            }
+        }
+
+        public static bool lanWarningShown = false;
+        [HarmonyPatch(typeof(MenuManager), "Start")]
+        [HarmonyPostfix]
+        public static void Start_Postfix(MenuManager __instance)
+        {
+            if (!__instance.isInitScene && GameNetworkManager.Instance.disableSteam)
+            {
+                if (lanWarningShown)
+                    __instance.lanWarningContainer.SetActive(false);
+                else
+                    lanWarningShown = true;
             }
         }
     }
@@ -191,6 +216,8 @@ namespace MoreCompany
             rectTransform.localScale = Vector3.one;
 
             quickMenuScrollInstance = spawnedQuickmenu;
+
+            CosmeticRegistry.SpawnCosmeticGUI(false);
         }
 
         public static void PopulateQuickMenu(QuickMenuManager __instance)

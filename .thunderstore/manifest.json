@@ -1,0 +1,9 @@
+{
+    "name": "MoreCompany",
+    "version_number": "1.10.1",
+    "website_url": "https://github.com/notnotnotswipez/MoreCompany",
+    "description": "MoreCompany expands Lethal Company's max player count for larger player lobbies and adds new cosmetics, all in a stable experience.",
+    "dependencies": [
+		"BepInEx-BepInExPack-5.4.2100"
+    ]
+}

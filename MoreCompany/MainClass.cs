@@ -324,7 +324,6 @@ namespace MoreCompany
 
                         newPlayerScript.DropAllHeldItems(false, false);
                         newPlayerScript.TeleportPlayer(round.notSpawnedPosition.position, false, 0f, false, true);
-                        UnlockableSuit.SwitchSuitForPlayer(newPlayerScript, 0, false);
 
                         // Set new player object
                         round.allPlayerObjects[originalLength + i] = copy;

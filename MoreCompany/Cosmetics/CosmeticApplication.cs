@@ -10,6 +10,7 @@ namespace MoreCompany.Cosmetics
         Player,
         DeadBody,
         MaskedEnemy,
+        DisplayGuy,
     }
 
     public class CosmeticApplication : MonoBehaviour
@@ -30,12 +31,15 @@ namespace MoreCompany.Cosmetics
         public void Awake()
         {
             Transform spine = transform.Find("spine") ?? transform;
-            head = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
             chest = spine.Find("spine.001").Find("spine.002").Find("spine.003");
-            lowerArmRight = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
+            head = chest.Find("spine.004");
+            lowerArmRight = chest.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
             hip = spine;
             shinLeft = spine.Find("thigh.L").Find("shin.L");
             shinRight = spine.Find("thigh.R").Find("shin.R");
+
+            if (parentType == ParentType.DisplayGuy)
+                CosmeticRegistry.UpdateCosmeticsOnDisplayGuy(false);
 
             RefreshAllCosmeticPositions();
         }
@@ -119,6 +123,10 @@ namespace MoreCompany.Cosmetics
             else if (parentType == ParentType.MaskedEnemy)
             {
                 isActive = MainClass.cosmeticsMaskedEnemy.Value;
+            }
+            else if (parentType == ParentType.DisplayGuy)
+            {
+                isActive = true;
             }
 
             foreach (var spawnedCosmetic in spawnedCosmetics)

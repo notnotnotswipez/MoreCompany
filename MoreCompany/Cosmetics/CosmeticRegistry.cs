@@ -105,6 +105,7 @@ namespace MoreCompany.Cosmetics
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
             displayGuyCosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
+            displayGuyCosmeticApplication.parentType = ParentType.DisplayGuy;
 
             GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
             GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
@@ -122,7 +123,6 @@ namespace MoreCompany.Cosmetics
             UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
 
             PopulateCosmetics();
-            UpdateCosmeticsOnDisplayGuy(false);
         }
 
         public static void PopulateCosmetics()

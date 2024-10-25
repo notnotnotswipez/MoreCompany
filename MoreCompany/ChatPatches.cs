@@ -80,7 +80,7 @@ namespace MoreCompany
 
                 List<string> cosmetics = cosmeticsStr.Split(',').ToList();
                 UpdateCosmeticsForPlayer((int)playerClientId, cosmetics);
-                MainClass.StaticLogger.LogInfo($"Server received {cosmetics.Count} cosmetics from {playerClientId}");
+                MainClass.StaticLogger.LogInfo($"Server received {cosmetics.Count} cosmetics from {playerClientId} | Request All: {requestAll}");
 
                 // Sync the sender's cosmetics to all clients
                 int writeSize = FastBufferWriter.GetWriteSize(playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr);

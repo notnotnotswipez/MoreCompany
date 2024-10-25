@@ -135,7 +135,8 @@ namespace MoreCompany
             PlayerControllerB playerController = playerControllerTmp ?? StartOfRound.Instance?.localPlayerController;
             if (playerController != null)
             {
-                string cosmeticsStr = disabled ? "" : string.Join(',', CosmeticRegistry.GetCosmeticsToSync());
+                List<string> cosmetics = CosmeticRegistry.GetCosmeticsToSync();
+                string cosmeticsStr = disabled ? "" : string.Join(',', cosmetics);
                 int writeSize = FastBufferWriter.GetWriteSize(playerController.playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr) + FastBufferWriter.GetWriteSize(requestAll);
                 var writer = new FastBufferWriter(writeSize, Allocator.Temp);
                 using (writer)
@@ -145,6 +146,7 @@ namespace MoreCompany
                     writer.WriteValueSafe(requestAll);
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_SV_SyncCosmetics", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
                 }
+                MainClass.StaticLogger.LogInfo($"Sending {cosmetics.Count} cosmetics to the server | Request All: {requestAll}");
             }
         }
 

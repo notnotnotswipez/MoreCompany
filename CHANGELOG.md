@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Known Issues
 - Some UI elements may not fully support more than 8 players
 
+# 1.10.2 (2024-10-25)
+- Added the ability to change cosmetics mid-game via the pause menu
+- Made the cosmetic button not show if no cosmetics are loaded
+- Added the ability to disable cosmetics via the config
+- Fixed masked & dead bodies cosmetics not instantly toggling when changed mid-game with a mod like LethalConfig
+- Fixed party hat showing up in extra players' view in v65
+
 # 1.10.1 (2024-08-19)
 ### Changed
 - Modified how cosmetics are displayed on masked entities

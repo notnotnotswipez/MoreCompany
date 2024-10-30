@@ -105,6 +105,7 @@ namespace MoreCompany.Cosmetics
                 .Find("ScavengerModel").Find("metarig").gameObject;
 
             displayGuyCosmeticApplication = displayGuy.AddComponent<CosmeticApplication>();
+            displayGuyCosmeticApplication.parentType = ParentType.DisplayGuy;
 
             GameObject enableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("EnableButton").gameObject;
             GameObject disableCosmeticsButton = cosmeticGUIGlobalScale.Find("CosmeticsScreen").Find("DisableButton").gameObject;
@@ -122,7 +123,6 @@ namespace MoreCompany.Cosmetics
             UpdateVisibilityCheckbox(enableCosmeticsButton, disableCosmeticsButton);
 
             PopulateCosmetics();
-            UpdateCosmeticsOnDisplayGuy(false);
         }
 
         public static void PopulateCosmetics()
@@ -211,7 +211,7 @@ namespace MoreCompany.Cosmetics
             }
         }
 
-        private static void RecursiveLayerChange(Transform transform, int layer)
+        public static void RecursiveLayerChange(Transform transform, int layer)
         {
             transform.gameObject.layer = layer;
             for (int i = 0; i < transform.childCount; i++)

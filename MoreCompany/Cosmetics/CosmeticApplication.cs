@@ -1,12 +1,23 @@
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace MoreCompany.Cosmetics
 {
+    public enum ParentType
+    {
+        Player,
+        DeadBody,
+        MaskedEnemy,
+        DisplayGuy,
+    }
+
     public class CosmeticApplication : MonoBehaviour
     {
         public bool detachedHead = false;
+
+        public ParentType parentType;
 
         public Transform head;
         public Transform hip;
@@ -15,16 +26,20 @@ namespace MoreCompany.Cosmetics
         public Transform shinRight;
         public Transform chest;
         public List<CosmeticInstance> spawnedCosmetics = new List<CosmeticInstance>();
+        public List<string> spawnedCosmeticsIds = new List<string>();
 
         public void Awake()
         {
             Transform spine = transform.Find("spine") ?? transform;
-            head = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("spine.004");
             chest = spine.Find("spine.001").Find("spine.002").Find("spine.003");
-            lowerArmRight = spine.Find("spine.001").Find("spine.002").Find("spine.003").Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
+            head = chest.Find("spine.004");
+            lowerArmRight = chest.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower");
             hip = spine;
             shinLeft = spine.Find("thigh.L").Find("shin.L");
             shinRight = spine.Find("thigh.R").Find("shin.R");
+
+            if (parentType == ParentType.DisplayGuy)
+                CosmeticRegistry.UpdateCosmeticsOnDisplayGuy(false);
 
             RefreshAllCosmeticPositions();
         }
@@ -39,10 +54,28 @@ namespace MoreCompany.Cosmetics
 
         private void OnEnable()
         {
-            foreach (var spawnedCosmetic in spawnedCosmetics)
+            if (spawnedCosmetics.Count > 0)
             {
-                if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && detachedHead) continue;
-                spawnedCosmetic.gameObject.SetActive(true);
+                if (parentType == ParentType.Player)
+                {
+                    PlayerControllerB playerController = transform.GetComponentInParent<PlayerControllerB>();
+                    UpdateAllCosmeticVisibilities(playerController != null && (int)playerController.playerClientId == StartOfRound.Instance.thisClientPlayerId);
+                }
+                else if (parentType == ParentType.MaskedEnemy)
+                {
+                    UpdateAllCosmeticVisibilities();
+
+                    MaskedPlayerEnemy maskedEnemy = transform.GetComponentInParent<MaskedPlayerEnemy>();
+                    if (maskedEnemy != null)
+                    {
+                        maskedEnemy.skinnedMeshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+                        maskedEnemy.meshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<MeshRenderer>();
+                    }
+                }
+                else
+                {
+                    UpdateAllCosmeticVisibilities();
+                }
             }
         }
 
@@ -53,24 +86,56 @@ namespace MoreCompany.Cosmetics
                 GameObject.Destroy(spawnedCosmetic.gameObject);
             }
             spawnedCosmetics.Clear();
+            spawnedCosmeticsIds.Clear();
         }
-        
-        public void ApplyCosmetic(string cosmeticId, bool startEnabled)
+
+        public bool ApplyCosmetic(string cosmeticId, bool startEnabled)
         {
-            if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmeticId))
+            if (CosmeticRegistry.cosmeticInstances.ContainsKey(cosmeticId) && !spawnedCosmeticsIds.Contains(cosmeticId))
             {
                 CosmeticInstance cosmeticInstance = CosmeticRegistry.cosmeticInstances[cosmeticId];
 
-                if (startEnabled && cosmeticInstance.cosmeticType == CosmeticType.HAT && detachedHead) return;
+                if (startEnabled && cosmeticInstance.cosmeticType == CosmeticType.HAT && detachedHead) return false;
 
                 GameObject cosmeticInstanceGameObject = GameObject.Instantiate(cosmeticInstance.gameObject);
                 cosmeticInstanceGameObject.SetActive(startEnabled);
                 CosmeticInstance cosmeticInstanceBehavior = cosmeticInstanceGameObject.GetComponent<CosmeticInstance>();
                 spawnedCosmetics.Add(cosmeticInstanceBehavior);
                 ParentCosmetic(cosmeticInstanceBehavior);
+                spawnedCosmeticsIds.Add(cosmeticId);
+                return true;
+            }
+
+            return false;
+        }
+
+        public void UpdateAllCosmeticVisibilities(bool isLocalPlayer = false)
+        {
+            bool isActive = false;
+            if (parentType == ParentType.Player)
+            {
+                isActive = MainClass.cosmeticsSyncOther.Value && !isLocalPlayer;
+            }
+            else if (parentType == ParentType.DeadBody)
+            {
+                isActive = MainClass.cosmeticsDeadBodies.Value;
+            }
+            else if (parentType == ParentType.MaskedEnemy)
+            {
+                isActive = MainClass.cosmeticsMaskedEnemy.Value;
+            }
+            else if (parentType == ParentType.DisplayGuy)
+            {
+                isActive = true;
+            }
+
+            foreach (var spawnedCosmetic in spawnedCosmetics)
+            {
+                if (spawnedCosmetic.cosmeticType == CosmeticType.HAT && detachedHead) continue;
+                spawnedCosmetic.gameObject.SetActive(isActive);
             }
         }
-        
+
         public void RefreshAllCosmeticPositions()
         {
             foreach (var spawnedCosmetic in spawnedCosmetics)
@@ -79,7 +144,7 @@ namespace MoreCompany.Cosmetics
             }
         }
 
-        private void ParentCosmetic(CosmeticInstance cosmeticInstance)
+        private bool ParentCosmetic(CosmeticInstance cosmeticInstance)
         {
             Transform targetTransform = null;
             switch (cosmeticInstance.cosmeticType)
@@ -107,12 +172,13 @@ namespace MoreCompany.Cosmetics
             if (targetTransform == null)
             {
                 MainClass.StaticLogger.LogError("Failed to find transform of type: " + cosmeticInstance.cosmeticType);
-                return;
+                return false;
             }
 
             cosmeticInstance.transform.position = targetTransform.position;
             cosmeticInstance.transform.rotation = targetTransform.rotation;
             cosmeticInstance.transform.parent = targetTransform;
+            return true;
         }
     }
 }

@@ -22,10 +22,6 @@ namespace MoreCompany
                 startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
                 startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    TextMeshProUGUI footerText = GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings/JoinSettingsContainer/PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                    if (footerText != null)
-                        footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
-
                     GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
                 });
             }
@@ -92,27 +88,10 @@ namespace MoreCompany
                     }
                 }
 
-                TextMeshProUGUI footerText = lanSubMenu.transform.Find("PrivatePublicDescription").GetComponent<TextMeshProUGUI>();
-                if (footerText != null)
-                    footerText.text = "The mod will attempt to auto-detect the crew size however you can manually specify it to reduce chance of failure.";
-
                 lanSubMenu.transform.Find("LobbyJoinOptions/LANOptions").gameObject.SetActive(true);
             }
 
             return menu;
-        }
-    }
-
-    // Crew Size Mismatch
-    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
-    public static class ConnectionDataPatch
-    {
-        public static void Postfix(ref GameNetworkManager __instance)
-        {
-            if (__instance.disableSteam)
-            {
-                NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(__instance.gameVersionNum.ToString() + "," + MainClass.newPlayerCount);
-            }
         }
     }
 
@@ -127,7 +106,7 @@ namespace MoreCompany
             yield break;
         }
 
-        private static void Prefix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Prefix(GameNetworkManager __instance, ulong clientId)
         {
             crewSizeMismatch = 0;
             if (__instance.disableSteam)
@@ -142,7 +121,7 @@ namespace MoreCompany
                 catch { }
             }
         }
-        private static void Postfix(ref GameNetworkManager __instance, ulong clientId)
+        private static void Postfix(GameNetworkManager __instance, ulong clientId)
         {
             if (__instance.disableSteam && crewSizeMismatch != 0)
             {

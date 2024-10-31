@@ -70,8 +70,14 @@ namespace MoreCompany
 
             if (!inputField.transform.Find("Registered"))
             {
-                inputField.onSubmit.AddListener(s => { UpdateTextBox(inputField, s); });
-                inputField.onDeselect.AddListener(s => { UpdateTextBox(inputField, s); });
+                inputField.onSubmit.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+                inputField.onDeselect.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
 
                 GameObject registered = new GameObject("Registered");
                 registered.transform.parent = inputField.transform;
@@ -87,13 +93,10 @@ namespace MoreCompany
             }
             else
             {
-                Transform lobbyHostOptions =
-                    __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
+                Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
                 if (lobbyHostOptions != null)
                 {
-                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf
-                        ? "LANOptions"
-                        : "OptionsNormal");
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf  ? "LANOptions" : "OptionsNormal");
                     if (parent != null)
                     {
                         GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);

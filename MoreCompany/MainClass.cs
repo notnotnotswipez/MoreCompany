@@ -23,7 +23,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.10.1";
+        public const string PLUGIN_VERSION = "1.11.0";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -104,7 +104,6 @@ namespace MoreCompany
                     if (cosmeticApplication == null) continue;
 
                     cosmeticApplication.UpdateAllCosmeticVisibilities(false);
-
                     maskedEnemy.skinnedMeshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                     maskedEnemy.meshRenderers = maskedEnemy.gameObject.GetComponentsInChildren<MeshRenderer>();
                 }
@@ -514,6 +513,23 @@ namespace MoreCompany
             List<string> newData = [origString];
             if (__instance.disableSteam)
                 newData.Add($"maxslots:{MainClass.actualPlayerCount}");
+            else
+                newData.Add("maxslots:-1");
+
+            string newString = string.Join(',', newData);
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(newString);
+        }
+    }
+
+    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
+    public static class ConnectionDataPatch
+    {
+        public static void Postfix(ref GameNetworkManager __instance)
+        {
+            string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
+            List<string> newData = [origString];
+            if (__instance.disableSteam)
+                newData.Add($"maxslots:{MainClass.newPlayerCount}");
             else
                 newData.Add("maxslots:-1");
 

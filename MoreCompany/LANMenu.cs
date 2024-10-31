@@ -20,7 +20,7 @@ namespace MoreCompany
                 startLAN_button.GetComponent<Button>().onClick = new Button.ButtonClickedEvent();
                 startLAN_button.GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings")?.gameObject?.SetActive(true);
+                    GameObject.Find("Canvas/MenuContainer/LobbyJoinSettings").gameObject.SetActive(true);
                 });
             }
 

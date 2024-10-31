@@ -34,9 +34,89 @@ namespace MoreCompany
 		}
 	}
 
+
     [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
     [HarmonyPriority(Priority.Last)]
     public static class MenuManagerHost
+    {
+        public static void UpdateTextBox(TMP_InputField inputField, string s)
+        {
+            if (inputField.text == MainClass.newPlayerCount.ToString())
+                return;
+
+            if (int.TryParse(s, out int result))
+            {
+                int originalCount = MainClass.newPlayerCount;
+                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.StaticConfig.Save();
+                inputField.text = MainClass.newPlayerCount.ToString();
+                if (MainClass.newPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+            }
+            else if (s.Length != 0)
+            {
+                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.caretPosition = 1;
+            }
+        }
+
+        public static void SetupCrewCountInput(TMP_InputField inputField)
+        {
+            inputField.text = MainClass.newPlayerCount.ToString();
+
+            if (!inputField.transform.Find("Registered"))
+            {
+                inputField.onSubmit.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+                inputField.onDeselect.AddListener(s =>
+                {
+                    UpdateTextBox(inputField, s);
+                });
+
+                GameObject registered = new GameObject("Registered");
+                registered.transform.parent = inputField.transform;
+            }
+        }
+
+        public static void CreateCrewCountInput(MenuManager __instance)
+        {
+            if (GameObject.Find("MC_CrewCount"))
+            {
+                TMP_InputField inputField = GameObject.Find("MC_CrewCount").GetComponentInChildren<TMP_InputField>();
+                SetupCrewCountInput(inputField);
+            }
+            else
+            {
+                Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
+                if (lobbyHostOptions != null)
+                {
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
+                    if (parent != null)
+                    {
+                        GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
+                        createdCrewUI.name = "MC_CrewCount";
+                        RectTransform rectTransform = createdCrewUI.GetComponent<RectTransform>();
+                        rectTransform.localPosition = new Vector3(96.9f, -70f, -6.7f);
+
+                        TMP_InputField inputField = createdCrewUI.transform.GetComponentInChildren<TMP_InputField>();
+                        inputField.characterLimit = 3;
+                        SetupCrewCountInput(inputField);
+                    }
+                }
+            }
+        }
+
+        public static void Postfix(MenuManager __instance)
+        {
+            MainClass.newPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+            CreateCrewCountInput(__instance);
+        }
+    }
+
+    [HarmonyPatch]
+    public static class MenuManagerLogoOverridePatch
     {
         public static void SetupCrewCountInput(TMP_InputField inputField)
         {
@@ -117,6 +197,7 @@ namespace MoreCompany
     {
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Awake_Postfix(MenuManager __instance)
         {
             if (__instance.isInitScene) return;

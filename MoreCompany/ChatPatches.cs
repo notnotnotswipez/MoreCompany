@@ -80,7 +80,7 @@ namespace MoreCompany
 
                 List<string> cosmetics = cosmeticsStr.Split(',').ToList();
                 UpdateCosmeticsForPlayer((int)playerClientId, cosmetics);
-                MainClass.StaticLogger.LogInfo($"Server received {cosmetics.Count} cosmetics from {playerClientId}");
+                MainClass.StaticLogger.LogInfo($"Server received {cosmetics.Count} cosmetics from {playerClientId} | Request All: {requestAll}");
 
                 // Sync the sender's cosmetics to all clients
                 int writeSize = FastBufferWriter.GetWriteSize(playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr);
@@ -89,7 +89,9 @@ namespace MoreCompany
                 {
                     writer.WriteValueSafe(playerClientId);
                     writer.WriteValueSafe(cosmeticsStr);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("MC_CL_ReceiveCosmetics", writer, NetworkDelivery.Reliable);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("MC_CL_ReceiveCosmetics", writer, writer.Capacity > 1300
+                        ? NetworkDelivery.ReliableFragmentedSequenced
+                        : NetworkDelivery.Reliable);
                 }
 
                 // Sync cosmetics of all clients back to the newly joined client
@@ -101,7 +103,9 @@ namespace MoreCompany
                     using (writerAll)
                     {
                         writerAll.WriteValueSafe(allCosmeticsStr);
-                        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_CL_ReceiveAllCosmetics", senderId, writerAll, NetworkDelivery.Reliable);
+                        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_CL_ReceiveAllCosmetics", senderId, writerAll, writerAll.Capacity > 1300
+                            ? NetworkDelivery.ReliableFragmentedSequenced
+                            : NetworkDelivery.Reliable);
                     }
                 }
             }
@@ -135,7 +139,8 @@ namespace MoreCompany
             PlayerControllerB playerController = playerControllerTmp ?? StartOfRound.Instance?.localPlayerController;
             if (playerController != null)
             {
-                string cosmeticsStr = disabled ? "" : string.Join(',', CosmeticRegistry.GetCosmeticsToSync());
+                List<string> cosmetics = CosmeticRegistry.GetCosmeticsToSync();
+                string cosmeticsStr = disabled ? "" : string.Join(',', cosmetics);
                 int writeSize = FastBufferWriter.GetWriteSize(playerController.playerClientId) + FastBufferWriter.GetWriteSize(cosmeticsStr) + FastBufferWriter.GetWriteSize(requestAll);
                 var writer = new FastBufferWriter(writeSize, Allocator.Temp);
                 using (writer)
@@ -143,8 +148,11 @@ namespace MoreCompany
                     writer.WriteValueSafe(playerController.playerClientId);
                     writer.WriteValueSafe(cosmeticsStr);
                     writer.WriteValueSafe(requestAll);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_SV_SyncCosmetics", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("MC_SV_SyncCosmetics", NetworkManager.ServerClientId, writer, writer.Capacity > 1300
+                        ? NetworkDelivery.ReliableFragmentedSequenced
+                        : NetworkDelivery.Reliable);
                 }
+                MainClass.StaticLogger.LogInfo($"Sending {cosmetics.Count} cosmetics to the server | Request All: {requestAll}");
             }
         }
 

@@ -521,23 +521,6 @@ namespace MoreCompany
         }
     }
 
-    [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
-    public static class ConnectionDataPatch
-    {
-        public static void Postfix(ref GameNetworkManager __instance)
-        {
-            string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
-            List<string> newData = [origString];
-            if (__instance.disableSteam)
-                newData.Add($"maxslots:{MainClass.newPlayerCount}");
-            else
-                newData.Add("maxslots:-1");
-
-            string newString = string.Join(',', newData);
-            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(newString);
-        }
-    }
-
     [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
     public static class ConnectionApproval
     {

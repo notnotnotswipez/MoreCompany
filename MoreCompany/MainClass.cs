@@ -30,8 +30,8 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
-        public static int minPlayerCount = 2;
-        public static int maxPlayerCount = 64;
+        public static readonly int minPlayerCount = 2;
+        public static readonly int maxPlayerCount = 64;
         public static int actualPlayerCount = 32;
         public static int newPlayerCount = Mathf.Max(4, actualPlayerCount);
 

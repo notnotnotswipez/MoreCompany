@@ -41,28 +41,33 @@ namespace MoreCompany
     {
         public static void UpdateTextBox(TMP_InputField inputField, string s)
         {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
+            if (inputField.text == MainClass.actualPlayerCount.ToString())
                 return;
 
             if (int.TryParse(s, out int result))
             {
-                int originalCount = MainClass.newPlayerCount;
-                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                MainClass.StaticConfig.Save();
-                inputField.text = MainClass.newPlayerCount.ToString();
-                if (MainClass.newPlayerCount != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+                int originalCount = MainClass.actualPlayerCount;
+                MainClass.actualPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
+                inputField.text = MainClass.actualPlayerCount.ToString();
+                if (MainClass.actualPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.actualPlayerCount}");
+                MenuManager menuManager = Object.FindFirstObjectByType<MenuManager>();
+                if (menuManager.hostSettings_LobbyPublic)
+                    ES3.Save("PlayerCount_Public", MainClass.actualPlayerCount, "LCGeneralSaveData");
+                else
+                    ES3.Save("PlayerCount_Private", MainClass.actualPlayerCount, "LCGeneralSaveData");
             }
             else if (s.Length != 0)
             {
-                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.text = MainClass.actualPlayerCount.ToString();
                 inputField.caretPosition = 1;
             }
         }
 
         public static void SetupCrewCountInput(TMP_InputField inputField)
         {
-            inputField.text = MainClass.newPlayerCount.ToString();
+            inputField.text = MainClass.actualPlayerCount.ToString();
 
             if (!inputField.transform.Find("Registered"))
             {
@@ -92,7 +97,7 @@ namespace MoreCompany
                 Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
                 if (lobbyHostOptions != null)
                 {
-                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf  ? "LANOptions" : "OptionsNormal");
                     if (parent != null)
                     {
                         GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
@@ -110,7 +115,14 @@ namespace MoreCompany
 
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.newPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+            if (__instance.hostSettings_LobbyPublic)
+                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Public", "LCGeneralSaveData", 32);
+            else
+                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Private", "LCGeneralSaveData", 8);
+            MainClass.actualPlayerCount =
+                Mathf.Clamp(MainClass.actualPlayerCount, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+            MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
+
             CreateCrewCountInput(__instance);
         }
     }
@@ -118,6 +130,22 @@ namespace MoreCompany
     [HarmonyPatch]
     public static class MenuManagerLogoOverridePatch
     {
+        [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
+        [HarmonyPostfix]
+        private static void HostSetLobbyPublic(MenuManager __instance, bool setPublic)
+        {
+            if (setPublic)
+                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Public", "LCGeneralSaveData", 32);
+            else
+                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Private", "LCGeneralSaveData", 8);
+            MainClass.actualPlayerCount =
+                Mathf.Clamp(MainClass.actualPlayerCount, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+            MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
+
+            if (GameObject.Find("MC_CrewCount"))
+                MenuManagerHost.CreateCrewCountInput(__instance);
+        }
+
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.Last)]

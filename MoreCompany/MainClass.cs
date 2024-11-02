@@ -29,11 +29,13 @@ namespace MoreCompany
     [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
     public class MainClass : BaseUnityPlugin
     {
+        public static readonly int defaultPlayerCount = 32;
         public static readonly int minPlayerCount = 4;
         public static readonly int maxPlayerCount = 50;
         public static int newPlayerCount = 32;
 
         public static ConfigFile StaticConfig;
+        public static ConfigEntry<int> playerCount;
         public static ConfigEntry<bool> cosmeticsDeadBodies;
         public static ConfigEntry<bool> cosmeticsMaskedEnemy;
         public static ConfigEntry<bool> cosmeticsSyncOther;
@@ -62,6 +64,8 @@ namespace MoreCompany
             StaticLogger = Logger;
             StaticConfig = Config;
 
+            playerCount = StaticConfig.Bind("General", "Player Count", defaultPlayerCount, new ConfigDescription("How many players can be in your lobby?", new AcceptableValueRange<int>(minPlayerCount, maxPlayerCount)));
+            newPlayerCount = Mathf.Max(minPlayerCount, playerCount.Value);
             cosmeticsSyncOther = StaticConfig.Bind("Cosmetics", "Show Cosmetics", true, "Should you be able to see cosmetics of other players?"); // This is the one linked to the UI button
             cosmeticsDeadBodies = StaticConfig.Bind("Cosmetics", "Show On Dead Bodies", true, "Should you be able to see cosmetics on dead bodies?");
             cosmeticsMaskedEnemy = StaticConfig.Bind("Cosmetics", "Show On Masked Enemy", true, "Should you be able to see cosmetics on the masked enemy?");

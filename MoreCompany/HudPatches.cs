@@ -198,10 +198,10 @@ namespace MoreCompany
             rectTransform.localPosition = new Vector3(0, -31.2f, 0);
             rectTransform.localScale = Vector3.one;
 
-            Array.Resize(ref __instance.playerListSlots, MainClass.newPlayerCount);
             Transform quickMenuScrollHolder = spawnedQuickmenu.transform.Find("Holder");
             if (quickMenuScrollHolder != null)
             {
+                Array.Resize(ref __instance.playerListSlots, MainClass.newPlayerCount);
                 for (int i = 0; i < MainClass.newPlayerCount; i++)
                 {
                     int finalIndex = i;

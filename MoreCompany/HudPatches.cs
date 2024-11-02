@@ -261,20 +261,22 @@ namespace MoreCompany
     {
         private static void Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
         {
-            if (playerObjectId < 0) return;
+            if (playerObjectId <= 4) return;
 
-            if (playerObjectId > 4)
+            __instance.playerListSlots[playerObjectId].KickUserButton.SetActive(StartOfRound.Instance.IsServer);
+            __instance.playerListSlots[playerObjectId].slotContainer.SetActive(true);
+            __instance.playerListSlots[playerObjectId].isConnected = true;
+            __instance.playerListSlots[playerObjectId].playerSteamId = steamId;
+            __instance.playerListSlots[playerObjectId].usernameHeader.text = playerName;
+            if (GameNetworkManager.Instance.localPlayerController != null)
             {
-                __instance.playerListSlots[playerObjectId].KickUserButton.SetActive(StartOfRound.Instance.IsServer);
-                __instance.playerListSlots[playerObjectId].slotContainer.SetActive(true);
-                __instance.playerListSlots[playerObjectId].isConnected = true;
-                __instance.playerListSlots[playerObjectId].playerSteamId = steamId;
-                __instance.playerListSlots[playerObjectId].usernameHeader.text = playerName;
-                if (GameNetworkManager.Instance.localPlayerController != null)
-                {
-                    __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-                }
+                __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
             }
+        }
+
+        private static void Postfix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
+        {
+            if (playerObjectId < 0) return;
 
             Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
             volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);

@@ -192,9 +192,8 @@ namespace MoreCompany
         {
             CosmeticRegistry.SpawnCosmeticGUI(false);
 
-            GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent);
             GameObject targetParent = __instance.playerListPanel.transform.Find("Image").gameObject;
-            spawnedQuickmenu.transform.SetParent(targetParent.transform);
+            GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent, targetParent.transform);
             RectTransform rectTransform = spawnedQuickmenu.GetComponent<RectTransform>();
             rectTransform.localPosition = new Vector3(0, -31.2f, 0);
             rectTransform.localScale = Vector3.one;
@@ -203,17 +202,20 @@ namespace MoreCompany
             Transform quickMenuScrollHolder = spawnedQuickmenu.transform.Find("Holder");
             if (quickMenuScrollHolder != null)
             {
-                for (int i = 0; i < __instance.playerListSlots.Length; i++)
+                for (int i = 0; i < MainClass.newPlayerCount; i++)
                 {
                     int finalIndex = i;
+
+                    if (__instance.playerListSlots[finalIndex] == null)
+                        __instance.playerListSlots[finalIndex] = new PlayerListSlot();
 
                     if (__instance.playerListSlots[finalIndex].slotContainer != null)
                         GameObject.Destroy(__instance.playerListSlots[finalIndex].slotContainer);
 
                     GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollHolder);
-                    spawnedPlayer.name = "PlayerListSlot" + i;
-                    __instance.playerListSlots[finalIndex].slotContainer = spawnedPlayer;
                     spawnedPlayer.SetActive(false);
+                    spawnedPlayer.name = "PlayerListSlot" + finalIndex;
+                    __instance.playerListSlots[finalIndex].slotContainer = spawnedPlayer;
 
                     RectTransform playerTransform = spawnedPlayer.GetComponent<RectTransform>();
                     playerTransform.localScale = Vector3.one;
@@ -225,15 +227,12 @@ namespace MoreCompany
                     __instance.playerListSlots[finalIndex].volumeSliderContainer = __instance.playerListSlots[finalIndex].volumeSlider.gameObject;
                     __instance.playerListSlots[finalIndex].volumeSlider.onValueChanged.AddListener(f =>
                     {
-                        if (__instance.playerListSlots[finalIndex].isConnected)
+                        float num = (f - __instance.playerListSlots[finalIndex].volumeSlider.minValue) / (__instance.playerListSlots[finalIndex].volumeSlider.maxValue - __instance.playerListSlots[finalIndex].volumeSlider.minValue);
+                        if (num <= 0f)
                         {
-                            float num = (f - __instance.playerListSlots[finalIndex].volumeSlider.minValue) / (__instance.playerListSlots[finalIndex].volumeSlider.maxValue - __instance.playerListSlots[finalIndex].volumeSlider.minValue);
-                            if (num <= 0f)
-                            {
-                                num = -70f;
-                            }
-                            SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
+                            num = -70f;
                         }
+                        SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
                     });
 
                     Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();

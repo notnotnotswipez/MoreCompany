@@ -52,11 +52,9 @@ namespace MoreCompany
                 inputField.text = MainClass.actualPlayerCount.ToString();
                 if (MainClass.actualPlayerCount != originalCount)
                     MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.actualPlayerCount}");
-                MenuManager menuManager = Object.FindFirstObjectByType<MenuManager>();
-                if (menuManager.hostSettings_LobbyPublic)
-                    ES3.Save("PlayerCount_Public", MainClass.actualPlayerCount, "LCGeneralSaveData");
-                else
-                    ES3.Save("PlayerCount_Private", MainClass.actualPlayerCount, "LCGeneralSaveData");
+
+                MainClass.playerCount.Value = MainClass.actualPlayerCount;
+                MainClass.StaticConfig.Save();
             }
             else if (s.Length != 0)
             {
@@ -97,7 +95,7 @@ namespace MoreCompany
                 Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
                 if (lobbyHostOptions != null)
                 {
-                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf  ? "LANOptions" : "OptionsNormal");
+                    Transform parent = lobbyHostOptions.Find(__instance.HostSettingsOptionsLAN.activeSelf ? "LANOptions" : "OptionsNormal");
                     if (parent != null)
                     {
                         GameObject createdCrewUI = GameObject.Instantiate(MainClass.crewCountUI, parent);
@@ -115,14 +113,8 @@ namespace MoreCompany
 
         public static void Postfix(MenuManager __instance)
         {
-            if (__instance.hostSettings_LobbyPublic)
-                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Public", "LCGeneralSaveData", 32);
-            else
-                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Private", "LCGeneralSaveData", 8);
-            MainClass.actualPlayerCount =
-                Mathf.Clamp(MainClass.actualPlayerCount, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+            MainClass.actualPlayerCount = Mathf.Max(MainClass.minPlayerCount, MainClass.playerCount.Value);
             MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
-
             CreateCrewCountInput(__instance);
         }
     }
@@ -130,22 +122,6 @@ namespace MoreCompany
     [HarmonyPatch]
     public static class MenuManagerLogoOverridePatch
     {
-        [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
-        [HarmonyPostfix]
-        private static void HostSetLobbyPublic(MenuManager __instance, bool setPublic)
-        {
-            if (setPublic)
-                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Public", "LCGeneralSaveData", 32);
-            else
-                MainClass.actualPlayerCount = ES3.Load("PlayerCount_Private", "LCGeneralSaveData", 8);
-            MainClass.actualPlayerCount =
-                Mathf.Clamp(MainClass.actualPlayerCount, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-            MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
-
-            if (GameObject.Find("MC_CrewCount"))
-                MenuManagerHost.CreateCrewCountInput(__instance);
-        }
-
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.Last)]
@@ -208,23 +184,64 @@ namespace MoreCompany
         }
     }
 
-	[HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
-	public static class AddUserPlayerListPatch
-    {
-        private static bool Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
+    [HarmonyPatch(typeof(QuickMenuManager), "Start")]
+	public static class QuickmenuVisualInjectPatch
+	{
+        public static void Postfix(QuickMenuManager __instance)
         {
-            QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
-            return false;
-        }
-    }
+            CosmeticRegistry.SpawnCosmeticGUI(false);
 
-    [HarmonyPatch(typeof(QuickMenuManager), "RemoveUserFromPlayerList")]
-    public static class RemoveUserPlayerListPatch
-    {
-        public static bool Prefix(QuickMenuManager __instance)
-        {
-            QuickmenuVisualInjectPatch.PopulateQuickMenu(__instance);
-            return false;
+            GameObject targetParent = __instance.playerListPanel.transform.Find("Image").gameObject;
+            GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent, targetParent.transform);
+            RectTransform rectTransform = spawnedQuickmenu.GetComponent<RectTransform>();
+            rectTransform.localPosition = new Vector3(0, -31.2f, 0);
+            rectTransform.localScale = Vector3.one;
+
+            Transform quickMenuScrollHolder = spawnedQuickmenu.transform.Find("Holder");
+            if (quickMenuScrollHolder != null)
+            {
+                Array.Resize(ref __instance.playerListSlots, MainClass.newPlayerCount);
+                for (int i = 0; i < MainClass.newPlayerCount; i++)
+                {
+                    int finalIndex = i;
+
+                    if (__instance.playerListSlots[finalIndex] == null)
+                        __instance.playerListSlots[finalIndex] = new PlayerListSlot();
+
+                    if (__instance.playerListSlots[finalIndex].slotContainer != null)
+                        GameObject.Destroy(__instance.playerListSlots[finalIndex].slotContainer);
+
+                    GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollHolder);
+                    spawnedPlayer.SetActive(false);
+                    spawnedPlayer.name = "PlayerListSlot" + finalIndex;
+                    __instance.playerListSlots[finalIndex].slotContainer = spawnedPlayer;
+
+                    RectTransform playerTransform = spawnedPlayer.GetComponent<RectTransform>();
+                    playerTransform.localScale = Vector3.one;
+                    playerTransform.localPosition = new Vector3(0, -playerTransform.localPosition.y, 0);
+
+                    __instance.playerListSlots[finalIndex].usernameHeader = spawnedPlayer.transform.Find("PlayerNameButton").Find("PName").GetComponent<TextMeshProUGUI>();
+
+                    __instance.playerListSlots[finalIndex].volumeSlider = spawnedPlayer.transform.Find("PlayerVolumeSlider").GetComponent<Slider>();
+                    __instance.playerListSlots[finalIndex].volumeSliderContainer = __instance.playerListSlots[finalIndex].volumeSlider.gameObject;
+                    __instance.playerListSlots[finalIndex].volumeSlider.onValueChanged.AddListener(f =>
+                    {
+                        float num = (f - __instance.playerListSlots[finalIndex].volumeSlider.minValue) / (__instance.playerListSlots[finalIndex].volumeSlider.maxValue - __instance.playerListSlots[finalIndex].volumeSlider.minValue);
+                        if (num <= 0f)
+                        {
+                            num = -70f;
+                        }
+                        SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
+                    });
+
+                    Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();
+                    profileButton.onClick.AddListener(() => __instance.OpenUserSteamProfile(finalIndex));
+
+                    Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
+                    kickButton.onClick.AddListener(() => __instance.KickUserFromServer(finalIndex));
+                    __instance.playerListSlots[finalIndex].KickUserButton = kickButton.gameObject;
+                }
+            }
         }
     }
 
@@ -237,132 +254,32 @@ namespace MoreCompany
         }
     }
 
-    [HarmonyPatch(typeof(QuickMenuManager), "NonHostPlayerSlotsEnabled")]
-    public static class QuickMenuDisplayPatch
+    [HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
+    public static class AddUserPlayerListPatch
     {
-        public static bool Prefix(ref bool __result)
+        private static void Prefix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
         {
-            __result = false;
+            if (playerObjectId <= 4) return;
 
-            for (int i = 1; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            __instance.playerListSlots[playerObjectId].KickUserButton.SetActive(StartOfRound.Instance.IsServer);
+            __instance.playerListSlots[playerObjectId].slotContainer.SetActive(true);
+            __instance.playerListSlots[playerObjectId].isConnected = true;
+            __instance.playerListSlots[playerObjectId].playerSteamId = steamId;
+            __instance.playerListSlots[playerObjectId].usernameHeader.text = playerName;
+            if (GameNetworkManager.Instance.localPlayerController != null)
             {
-                PlayerControllerB playerScript = StartOfRound.Instance.allPlayerScripts[i];
-                if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
-                {
-                    __result = true;
-                    break;
-                }
+                __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
             }
-
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(QuickMenuManager), "Start")]
-	public static class QuickmenuVisualInjectPatch
-	{
-        public static GameObject quickMenuScrollInstance = null;
-
-        public static void Postfix(QuickMenuManager __instance)
-        {
-            GameObject targetParent = __instance.playerListPanel.transform.Find("Image").gameObject;
-            GameObject spawnedQuickmenu = Object.Instantiate(MainClass.quickMenuScrollParent);
-            spawnedQuickmenu.transform.SetParent(targetParent.transform);
-            RectTransform rectTransform = spawnedQuickmenu.GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(0, -31.2f, 0);
-            rectTransform.localScale = Vector3.one;
-
-            quickMenuScrollInstance = spawnedQuickmenu;
-
-            CosmeticRegistry.SpawnCosmeticGUI(false);
         }
 
-        public static void PopulateQuickMenu(QuickMenuManager __instance)
+        private static void Postfix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
         {
-            if (quickMenuScrollInstance == null)
-            {
-                return;
-            }
-            Transform quickMenuScrollHolder = quickMenuScrollInstance.transform.Find("Holder");
-            if (quickMenuScrollHolder == null)
-            {
-                return;
-            }
-            List<GameObject> toDestroy = new List<GameObject>();
-            int childCount = quickMenuScrollHolder.childCount;
-            for (int i = 0; i < childCount; i++)
-            {
-                toDestroy.Add(quickMenuScrollHolder.GetChild(i).gameObject);
-            }
-            foreach (var gameObject in toDestroy)
-            {
-                GameObject.Destroy(gameObject);
-            }
+            if (playerObjectId < 0) return;
 
-            if (!StartOfRound.Instance)
-            {
-                return;
-            }
+            Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
+            volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
 
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
-            {
-                PlayerControllerB playerScript = StartOfRound.Instance.allPlayerScripts[i];
-                if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
-                {
-                    GameObject spawnedPlayer = Object.Instantiate(MainClass.playerEntry, quickMenuScrollHolder);
-                    RectTransform playerTransform = spawnedPlayer.GetComponent<RectTransform>();
-                    playerTransform.localScale = Vector3.one;
-                    playerTransform.localPosition = new Vector3(0, -playerTransform.localPosition.y, 0);
-
-                    TextMeshProUGUI playerName = spawnedPlayer.transform.Find("PlayerNameButton").Find("PName").GetComponent<TextMeshProUGUI>();
-                    playerName.text = playerScript.playerUsername;
-
-                    Slider playerVolume = spawnedPlayer.transform.Find("PlayerVolumeSlider").GetComponent<Slider>();
-                    int finalIndex = i;
-                    playerVolume.onValueChanged.AddListener(f =>
-                    {
-                        if (playerScript.isPlayerControlled || playerScript.isPlayerDead)
-                        {
-                            float num = (f - playerVolume.minValue) / (playerVolume.maxValue - playerVolume.minValue);
-                            if (num <= 0f)
-                            {
-                                num = -70f;
-                            }
-                            SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
-                        }
-                    });
-                    playerVolume.value = Mathf.Clamp((SoundManager.Instance.playerVoiceVolumes[i] * (playerVolume.maxValue - playerVolume.minValue)) + playerVolume.minValue, playerVolume.minValue, playerVolume.maxValue);
-
-                    Button kickButton = spawnedPlayer.transform.Find("KickButton").GetComponent<Button>();
-                    kickButton.onClick.AddListener(() =>
-                    {
-                        __instance.KickUserFromServer(finalIndex);
-                    });
-
-                    if (StartOfRound.Instance.localPlayerController != null && StartOfRound.Instance.localPlayerController.playerClientId == playerScript.playerClientId)
-                    {
-                        playerVolume.gameObject.SetActive(false);
-                        spawnedPlayer.transform.Find("Text (1)").gameObject.SetActive(false);
-
-                        kickButton.gameObject.SetActive(false);
-                    }
-                    else if (!GameNetworkManager.Instance.isHostingGame)
-                    {
-                        kickButton.gameObject.SetActive(false);
-                    }
-
-                    Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();
-                    profileButton.onClick.AddListener(() =>
-                    {
-                        if (GameNetworkManager.Instance.disableSteam)
-                        {
-                            return;
-                        }
-
-                        SteamFriends.OpenUserOverlay(playerScript.playerSteamId, "steamid");
-                    });
-                }
-            }
+            __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
         }
     }
 

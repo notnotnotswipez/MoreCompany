@@ -280,7 +280,7 @@ namespace MoreCompany
             Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
             volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
 
-            __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)").gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
+            __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
         }
     }
 

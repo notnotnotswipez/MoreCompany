@@ -48,10 +48,12 @@ namespace MoreCompany
             {
                 int originalCount = MainClass.newPlayerCount;
                 MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                MainClass.StaticConfig.Save();
                 inputField.text = MainClass.newPlayerCount.ToString();
                 if (MainClass.newPlayerCount != originalCount)
                     MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+
+                MainClass.playerCount.Value = MainClass.newPlayerCount;
+                MainClass.StaticConfig.Save();
             }
             else if (s.Length != 0)
             {
@@ -110,7 +112,7 @@ namespace MoreCompany
 
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.newPlayerCount = __instance.hostSettings_LobbyPublic ? 32 : 12;
+            MainClass.newPlayerCount = Mathf.Max(MainClass.minPlayerCount, MainClass.playerCount.Value);
             CreateCrewCountInput(__instance);
         }
     }
@@ -118,16 +120,12 @@ namespace MoreCompany
     [HarmonyPatch]
     public static class MenuManagerLogoOverridePatch
     {
-        public static List<TMP_InputField> inputFields = new List<TMP_InputField>();
-
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.Last)]
         public static void Awake_Postfix(MenuManager __instance)
         {
             if (__instance.isInitScene) return;
-
-            MainClass.ReadSettingsFromFile();
 
             // Add the MoreCompany logo
             try

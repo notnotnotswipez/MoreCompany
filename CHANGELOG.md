@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Known Issues
 - Some UI elements may not fully support more than 8 players
 
-# 1.10.2 (2024-10-25)
+# 1.11.0 (2024-10-30)
+- Fixed bug where too much cosmetic data caused none to send at all
+- Added API for developers to configure hide-ability of cosmetics
+
+# 1.10.2 (2024-10-23)
 - Added the ability to change cosmetics mid-game via the pause menu
 - Made the cosmetic button not show if no cosmetics are loaded
 - Added the ability to disable cosmetics via the config

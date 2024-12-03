@@ -9,15 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Some UI elements may not fully support more than 8 players
 
 # 1.11.0 (2024-10-30)
-- Fixed bug where too much cosmetic data caused none to send at all
+### Added
 - Added API for developers to configure hide-ability of cosmetics
 
+### Fixed
+- Fixed bug where too much cosmetic data caused none to send at all
+
 # 1.10.2 (2024-10-23)
+### Added
 - Added the ability to change cosmetics mid-game via the pause menu
-- Made the cosmetic button not show if no cosmetics are loaded
 - Added the ability to disable cosmetics via the config
+
+### Changed
+- Made the cosmetic button not show if no cosmetics are loaded
+
+### Fixed
 - Fixed masked & dead bodies cosmetics not instantly toggling when changed mid-game with a mod like LethalConfig
 - Fixed party hat showing up in extra players' view in v65
+
 
 # 1.10.1 (2024-08-19)
 ### Changed

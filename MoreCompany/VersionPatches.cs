@@ -19,11 +19,22 @@ namespace MoreCompany
         }
     }
 
-    [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
-    [HarmonyPriority(Priority.Last)]
+    [HarmonyPatch]
     public static class OnLobbyCreatedPatch
     {
-        private static void Postfix(Steamworks.Result result, ref Lobby lobby)
+        [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
+        [HarmonyPrefix]
+        private static void SteamMatchmaking_OnLobbyCreated_Prefix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
+        {
+            if (result != Steamworks.Result.OK)
+                return;
+
+            lobby.SetData("maxplayers", lobby.MaxMembers.ToString());
+        }
+
+        [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
+        [HarmonyPostfix]
+        private static void SteamMatchmaking_OnLobbyCreated_Postfix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
         {
             if (result != Steamworks.Result.OK)
                 return;
@@ -32,8 +43,6 @@ namespace MoreCompany
             {
                 lobby.SetData("tag", "morecompany");
             }
-
-            lobby.SetData("maxplayers", lobby.MaxMembers.ToString());
         }
     }
 

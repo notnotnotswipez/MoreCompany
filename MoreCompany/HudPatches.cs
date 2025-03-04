@@ -1,12 +1,13 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
+using DunGen;
 using GameNetcodeStuff;
 using HarmonyLib;
 using MoreCompany.Cosmetics;
-using Steamworks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,25 +15,25 @@ using Object = UnityEngine.Object;
 
 namespace MoreCompany
 {
-	[HarmonyPatch(typeof(HUDManager), "AddChatMessage")]
-	public static class HudChatPatch
-	{
-		public static void Prefix(HUDManager __instance, ref string chatMessage, string nameOfUserWhoTyped = "")
-		{
-			if (__instance.lastChatMessage == chatMessage)
-			{
-				return;
-			}
-			StringBuilder stringBuilder = new StringBuilder(chatMessage);
-			for (int i = 0; i < MainClass.newPlayerCount; i++)
-			{
-				string targetReplacement = $"[playerNum{i}]";
-				string replacement = StartOfRound.Instance.allPlayerScripts[i].playerUsername;
-				stringBuilder.Replace(targetReplacement, replacement);
-			}
-			chatMessage = stringBuilder.ToString();
-		}
-	}
+    [HarmonyPatch(typeof(HUDManager), "AddChatMessage")]
+    public static class HudChatPatch
+    {
+        public static void Prefix(HUDManager __instance, ref string chatMessage, string nameOfUserWhoTyped = "")
+        {
+            if (__instance.lastChatMessage == chatMessage)
+            {
+                return;
+            }
+            StringBuilder stringBuilder = new StringBuilder(chatMessage);
+            for (int i = 0; i < MainClass.newPlayerCount; i++)
+            {
+                string targetReplacement = $"[playerNum{i}]";
+                string replacement = StartOfRound.Instance.allPlayerScripts[i].playerUsername;
+                stringBuilder.Replace(targetReplacement, replacement);
+            }
+            chatMessage = stringBuilder.ToString();
+        }
+    }
 
 
     [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
@@ -151,10 +152,10 @@ namespace MoreCompany
                     }
                 }
             }
-			catch (Exception e)
-			{
+            catch (Exception e)
+            {
                 MainClass.StaticLogger.LogError(e);
-			}
+            }
 
             try
             {
@@ -184,8 +185,8 @@ namespace MoreCompany
     }
 
     [HarmonyPatch(typeof(QuickMenuManager), "Start")]
-	public static class QuickmenuVisualInjectPatch
-	{
+    public static class QuickmenuVisualInjectPatch
+    {
         public static void Postfix(QuickMenuManager __instance)
         {
             CosmeticRegistry.SpawnCosmeticGUI(false);
@@ -265,10 +266,12 @@ namespace MoreCompany
             __instance.playerListSlots[playerObjectId].isConnected = true;
             __instance.playerListSlots[playerObjectId].playerSteamId = steamId;
             __instance.playerListSlots[playerObjectId].usernameHeader.text = playerName;
+            /* This is effectively useless as it is now handled in the Postfix
             if (GameNetworkManager.Instance.localPlayerController != null)
             {
                 __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
             }
+            */
         }
 
         private static void Postfix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
@@ -277,37 +280,53 @@ namespace MoreCompany
 
             Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
             volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
+            
+            CoroutineHelper.Start(Coroutines.UpdateVolumeVisibility(__instance, playerObjectId));
+            // __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
+        }
 
+    }
+    public static class Coroutines
+    {
+        public static IEnumerator UpdateVolumeVisibility(QuickMenuManager __instance, int playerObjectId)
+        {
+            while (GameNetworkManager.Instance.localPlayerController == null)
+            {
+                yield return null;
+            }
+
+            __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
             __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
         }
     }
 
+
     [HarmonyPatch(typeof(QuickMenuManager), "ConfirmKickUserFromServer")]
     public static class KickPatch
-	{
+    {
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
             bool foundCount = false;
             bool alreadyReplaced = false;
             foreach (var instruction in instructions)
-			{
-				if (!alreadyReplaced)
-				{
-					if (!foundCount && instruction.ToString() == "ldfld int QuickMenuManager::playerObjToKick")
-					{
-						foundCount = true;
-					}
-					else if (foundCount && instruction.ToString() == "ldc.i4.3 NULL")
-					{
-						alreadyReplaced = true;
-						CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
-						newInstructions.Add(codeInstruction);
+            {
+                if (!alreadyReplaced)
+                {
+                    if (!foundCount && instruction.ToString() == "ldfld int QuickMenuManager::playerObjToKick")
+                    {
+                        foundCount = true;
+                    }
+                    else if (foundCount && instruction.ToString() == "ldc.i4.3 NULL")
+                    {
+                        alreadyReplaced = true;
+                        CodeInstruction codeInstruction = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(MainClass), "newPlayerCount"));
+                        newInstructions.Add(codeInstruction);
                         continue;
-					}
-				}
+                    }
+                }
 
-				newInstructions.Add(instruction);
+                newInstructions.Add(instruction);
             }
 
             if (!alreadyReplaced) MainClass.StaticLogger.LogWarning("KickPatch failed to replace newPlayerCount");
@@ -316,40 +335,40 @@ namespace MoreCompany
         }
     }
 
-	[HarmonyPatch(typeof(HUDManager), "UpdateBoxesSpectateUI")]
-	public static class SpectatorBoxUpdatePatch
-	{
-		public static void Postfix(HUDManager __instance)
-		{
-			Dictionary<Animator, PlayerControllerB> specPrivateDict = ReflectionUtils.GetFieldValue<Dictionary<Animator, PlayerControllerB>>(__instance, "spectatingPlayerBoxes");
-			int xVal = -64;
-			int yVal = 0;
-			int index = 0;
+    [HarmonyPatch(typeof(HUDManager), "UpdateBoxesSpectateUI")]
+    public static class SpectatorBoxUpdatePatch
+    {
+        public static void Postfix(HUDManager __instance)
+        {
+            Dictionary<Animator, PlayerControllerB> specPrivateDict = ReflectionUtils.GetFieldValue<Dictionary<Animator, PlayerControllerB>>(__instance, "spectatingPlayerBoxes");
+            int xVal = -64;
+            int yVal = 0;
+            int index = 0;
 
-			int ySpacing = -70;
-			int xSpacing = 230;
+            int ySpacing = -70;
+            int xSpacing = 230;
 
-			int maxPerRow = 4;
-			foreach (var animator in specPrivateDict)
-			{
+            int maxPerRow = 4;
+            foreach (var animator in specPrivateDict)
+            {
 
-				if (animator.Key.gameObject.activeInHierarchy)
-				{
-					GameObject gameObject = animator.Key.gameObject;
-					RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
-					// Use index to determine position
-					int row = (int) Math.Floor(((double)index / maxPerRow));
-					int col = index % maxPerRow;
+                if (animator.Key.gameObject.activeInHierarchy)
+                {
+                    GameObject gameObject = animator.Key.gameObject;
+                    RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
+                    // Use index to determine position
+                    int row = (int)Math.Floor(((double)index / maxPerRow));
+                    int col = index % maxPerRow;
 
-					int nextY = col * ySpacing;
-					int nextX = row * (xSpacing);
-					rectTransform.anchoredPosition = new Vector3(xVal + nextX, yVal + nextY, 0);
+                    int nextY = col * ySpacing;
+                    int nextX = row * (xSpacing);
+                    rectTransform.anchoredPosition = new Vector3(xVal + nextX, yVal + nextY, 0);
 
-					index++;
-				}
-			}
-		}
-	}
+                    index++;
+                }
+            }
+        }
+    }
 
     [HarmonyPatch(typeof(HUDManager), "Start")]
     public static class HudStartPatch
@@ -375,18 +394,18 @@ namespace MoreCompany
             // We want to hide all other ui elements, this will change once we introduce a new ui
             for (int i = 8; i < MainClass.newPlayerCount; i++)
             {
-	            MakePlayerHolder(i, original, statUIElements, new Vector3(10000f, 10000f, 0));
+                MakePlayerHolder(i, original, statUIElements, new Vector3(10000f, 10000f, 0));
             }
         }
 
         public static void MakePlayerHolder(int index, GameObject original, EndOfGameStatUIElements uiElements, Vector3 localPosition)
         {
-	        if (index+1 > MainClass.newPlayerCount)
-	        {
-		        return;
-	        }
+            if (index + 1 > MainClass.newPlayerCount)
+            {
+                return;
+            }
 
-	        GameObject spawned = Object.Instantiate(original);
+            GameObject spawned = Object.Instantiate(original);
             RectTransform rectTransform = spawned.GetComponent<RectTransform>();
             RectTransform originalRectTransform = original.GetComponent<RectTransform>();
             rectTransform.SetParent(originalRectTransform.parent);

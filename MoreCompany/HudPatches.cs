@@ -234,7 +234,7 @@ namespace MoreCompany
                             num = -70f;
                         }
                         SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
-                        if (!GameNetworkManager.Instance.disableSteam && (int)GameNetworkManager.Instance.localPlayerController.playerClientId != finalIndex)
+                        if (!GameNetworkManager.Instance.disableSteam)
                         {
                             // This prevents the saved data from being overwritten while loading
                             if (AddUserPlayerListPatch.loadingVolumeData) return;

@@ -280,8 +280,8 @@ namespace MoreCompany
 
             Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
             volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
-            
-            CoroutineHelper.Start(Coroutines.UpdateVolumeVisibility(__instance, playerObjectId));
+
+            __instance.StartCoroutine(Coroutines.UpdateVolumeVisibility(__instance, playerObjectId));
             // __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
         }
 
@@ -294,7 +294,7 @@ namespace MoreCompany
             {
                 yield return null;
             }
-
+            
             __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
             __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
         }

@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading.Tasks;
 using DunGen;
 using GameNetcodeStuff;
 using HarmonyLib;
 using MoreCompany.Cosmetics;
+using Steamworks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -224,7 +226,7 @@ namespace MoreCompany
 
                     __instance.playerListSlots[finalIndex].volumeSlider = spawnedPlayer.transform.Find("PlayerVolumeSlider").GetComponent<Slider>();
                     __instance.playerListSlots[finalIndex].volumeSliderContainer = __instance.playerListSlots[finalIndex].volumeSlider.gameObject;
-                    __instance.playerListSlots[finalIndex].volumeSlider.onValueChanged.AddListener(f =>
+                    __instance.playerListSlots[finalIndex].volumeSlider.onValueChanged.AddListener(async f =>
                     {
                         float num = (f - __instance.playerListSlots[finalIndex].volumeSlider.minValue) / (__instance.playerListSlots[finalIndex].volumeSlider.maxValue - __instance.playerListSlots[finalIndex].volumeSlider.minValue);
                         if (num <= 0f)
@@ -232,6 +234,12 @@ namespace MoreCompany
                             num = -70f;
                         }
                         SoundManager.Instance.playerVoiceVolumes[finalIndex] = num;
+                        if (!GameNetworkManager.Instance.disableSteam && (int)GameNetworkManager.Instance.localPlayerController.playerClientId != finalIndex)
+                        {
+                            // This prevents the saved data from being overwritten while loading
+                            if (AddUserPlayerListPatch.loadingVolumeData) return;
+                            await Coroutines.SaveVolumeAsync(StartOfRound.Instance.allPlayerScripts[finalIndex].playerSteamId.ToString(), num);
+                        }
                     });
 
                     Button profileButton = spawnedPlayer.transform.Find("ProfileIcon").GetComponent<Button>();
@@ -266,37 +274,54 @@ namespace MoreCompany
             __instance.playerListSlots[playerObjectId].isConnected = true;
             __instance.playerListSlots[playerObjectId].playerSteamId = steamId;
             __instance.playerListSlots[playerObjectId].usernameHeader.text = playerName;
-            /* This is effectively useless as it is now handled in the Postfix
-            if (GameNetworkManager.Instance.localPlayerController != null)
-            {
-                __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-            }
-            */
         }
-
+        public static bool loadingVolumeData = false;
         private static void Postfix(QuickMenuManager __instance, ulong steamId, string playerName, int playerObjectId)
         {
             if (playerObjectId < 0) return;
 
             Slider volumeSlider = __instance.playerListSlots[playerObjectId].volumeSlider;
-            volumeSlider.value = Mathf.Clamp(SoundManager.Instance.playerVoiceVolumes[playerObjectId] * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
+            loadingVolumeData = true;
 
-            __instance.StartCoroutine(Coroutines.UpdateVolumeVisibility(__instance, playerObjectId));
-            // __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
+            float volumeValue = ES3.Load(steamId.ToString(), "morecompanyonlinevolumedata", SoundManager.Instance.playerVoiceVolumes[playerObjectId]);
+            volumeValue = Mathf.Clamp(volumeValue * (volumeSlider.maxValue - volumeSlider.minValue) + volumeSlider.minValue, volumeSlider.minValue, volumeSlider.maxValue);
+
+            volumeSlider.value = volumeValue;
+            loadingVolumeData = false;
+
+            __instance.StartCoroutine(Coroutines.UpdatePlayerListSlotVisibility(__instance, playerObjectId));
         }
 
     }
     public static class Coroutines
     {
-        public static IEnumerator UpdateVolumeVisibility(QuickMenuManager __instance, int playerObjectId)
+        public static IEnumerator UpdatePlayerListSlotVisibility(QuickMenuManager __instance, int playerObjectId)
         {
             while (GameNetworkManager.Instance.localPlayerController == null)
             {
                 yield return null;
             }
-            
-            __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(playerObjectId != (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-            __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(__instance.playerListSlots[playerObjectId].volumeSliderContainer.activeSelf);
+
+            bool IsLocalPlayer = playerObjectId == (int)GameNetworkManager.Instance.localPlayerController.playerClientId;
+            __instance.playerListSlots[playerObjectId].KickUserButton.SetActive(!IsLocalPlayer);
+            __instance.playerListSlots[playerObjectId].volumeSliderContainer.SetActive(!IsLocalPlayer);
+            __instance.playerListSlots[playerObjectId].slotContainer.transform.Find("Text (1)")?.gameObject.SetActive(!IsLocalPlayer);
+        }
+
+        public static async Task SaveVolumeAsync(string steamId, float volumeValue)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    ES3.Save(steamId, volumeValue, "morecompanyonlinevolumedata");
+                    // MainClass.StaticLogger.LogDebug($"Saved value: {volumeValue}, steamId: {steamId}");
+                }
+                catch (Exception e)
+                {
+                    MainClass.StaticLogger.LogWarning($"Error while trying to save volume data: {e}");
+                }
+            });
         }
     }
 

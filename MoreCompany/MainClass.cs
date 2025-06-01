@@ -527,7 +527,10 @@ namespace MoreCompany
         public static void Postfix(ref GameNetworkManager __instance)
         {
             string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
-            List<string> newData = [origString];
+            List<string> newData = new List<string>
+            {
+                origString
+            };
             if (__instance.disableSteam)
                 newData.Add($"maxslots:{MainClass.newPlayerCount}");
             else

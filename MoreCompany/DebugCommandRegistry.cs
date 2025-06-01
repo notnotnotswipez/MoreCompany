@@ -36,17 +36,19 @@ namespace MoreCompany
                     scrapName = scrapName.Trim();
                     
                     Vector3 vector = localPlayer.transform.position + localPlayer.transform.forward * 2f;
-                    SpawnableItemWithRarity selectedItem = null;
-                    foreach (var rarityItem in StartOfRound.Instance.currentLevel.spawnableScrap)
+
+                    Item selectedItem = null;
+
+                    foreach (var itemType in Resources.FindObjectsOfTypeAll<Item>())
                     {
-                        if (rarityItem.spawnableItem.itemName.ToLower() == scrapName.ToLower())
+                        if (itemType.itemName.ToLower() == scrapName.ToLower())
                         {
-                            selectedItem = rarityItem;
+                            selectedItem = itemType;
                             break;
                         }
                     }
 
-                    GameObject gameObject = GameObject.Instantiate<GameObject>(selectedItem.spawnableItem.spawnPrefab, vector, Quaternion.identity, null);
+                    GameObject gameObject = GameObject.Instantiate<GameObject>(selectedItem.spawnPrefab, vector, Quaternion.identity, null);
                     GrabbableObject component = gameObject.GetComponent<GrabbableObject>();
                     component.transform.rotation = Quaternion.Euler(component.itemProperties.restingRotation);
                     component.fallTime = 0f;
@@ -61,33 +63,35 @@ namespace MoreCompany
                     }
                     
                     enemyName = enemyName.Trim();
-                    
-                    SpawnableEnemyWithRarity selectedEnemy = null;
-                    
-                    foreach (var enemyWithRarity in StartOfRound.Instance.currentLevel.Enemies)
+
+                    EnemyType selectedType = null;
+
+                    foreach (var enemyType in Resources.FindObjectsOfTypeAll<EnemyType>())
                     {
-                        if (enemyWithRarity.enemyType.enemyName.ToLower() == enemyName.ToLower())
+                        if (enemyType.enemyName.ToLower() == enemyName.ToLower())
                         {
-                            selectedEnemy = enemyWithRarity;
+                            selectedType = enemyType;
                             break;
                         }
                     }
 
                     RoundManager.Instance.SpawnEnemyGameObject(
                         localPlayer.transform.position + localPlayer.transform.forward * 2f, 0, -1,
-                        selectedEnemy.enemyType);
+                        selectedType);
                     break;
                 case "listall":
+                    MainClass.StaticLogger.LogInfo("-----------------");
                     MainClass.StaticLogger.LogInfo("Spawnable scrap:");
-                    foreach (SpawnableItemWithRarity spawnableItemWithRarity in StartOfRound.Instance.currentLevel.spawnableScrap)
+                    foreach (var item in Resources.FindObjectsOfTypeAll<Item>())
                     {
-                        MainClass.StaticLogger.LogInfo(spawnableItemWithRarity.spawnableItem.itemName);
+                        MainClass.StaticLogger.LogInfo(item.itemName);
                     }
-                
+
+                    MainClass.StaticLogger.LogInfo("-----------------");
                     MainClass.StaticLogger.LogInfo("Spawnable enemies:");
-                    foreach (SpawnableEnemyWithRarity spawnableItemWithRarity in StartOfRound.Instance.currentLevel.Enemies)
+                    foreach (var enemyType in Resources.FindObjectsOfTypeAll<EnemyType>())
                     {
-                        MainClass.StaticLogger.LogInfo(spawnableItemWithRarity.enemyType.enemyName);
+                        MainClass.StaticLogger.LogInfo(enemyType.enemyName);
                     }
                     break;
             }

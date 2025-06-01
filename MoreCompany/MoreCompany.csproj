@@ -85,7 +85,7 @@
 
   <!-- Runtime dependencies (CI) -->
   <ItemGroup Condition="$(CI) == 'true'">
-    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="67.0.0-ngd.0" />
+    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" />
   </ItemGroup>
 
   <!-- prevent referenced assemblies from being copied to output folders -->

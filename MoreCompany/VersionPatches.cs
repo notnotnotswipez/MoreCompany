@@ -26,9 +26,9 @@ namespace MoreCompany
     {
         public static void Postfix(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance != null && __instance.versionNumberText != null)
+            if (!__instance.isInitScene && __instance.versionNumberText != null)
             {
-                __instance.versionNumberText.text = string.Format("v{0} (MC)", GameNetworkAwakePatch.originalVersion);
+                __instance.versionNumberText.text = string.Format("{0} (MC)", __instance.versionNumberText.text.Replace($"v{9950 + GameNetworkAwakePatch.originalVersion}", $"v{GameNetworkAwakePatch.originalVersion}"));
             }
         }
     }

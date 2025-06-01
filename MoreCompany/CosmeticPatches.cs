@@ -47,7 +47,7 @@ namespace MoreCompany
         [HarmonyPostfix]
         public static void SpawnDeadBody(ref PlayerControllerB __instance, int deathAnimation = 0)
         {
-            Transform cosmeticRoot = __instance.deadBody.transform;
+            Transform cosmeticRoot = __instance.deadBody?.transform;
             if (cosmeticRoot == null) return;
             bool detachedHead = __instance.deadBody.detachedHead;
             if (deathAnimation == 4 || deathAnimation == 5) detachedHead = true; // Masked

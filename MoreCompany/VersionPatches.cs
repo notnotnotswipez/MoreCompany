@@ -1,34 +1,77 @@
+using BepInEx.Bootstrap;
 using HarmonyLib;
+using Steamworks.Data;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MoreCompany
 {
-    [HarmonyPatch(typeof(GameNetworkManager), "Awake")]
-    public static class GameNetworkAwakePatch
-    {
-        public static int originalVersion = 0;
-
-        public static void Postfix(GameNetworkManager __instance)
-        {
-            originalVersion = __instance.gameVersionNum;
-
-            // LC_API compatibility.
-            if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("LC_API"))
-            {
-	            __instance.gameVersionNum = 9950 + originalVersion;
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(MenuManager), "Awake")]
     public static class MenuManagerVersionDisplayPatch
     {
         public static void Postfix(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance != null && __instance.versionNumberText != null)
+            if (!__instance.isInitScene && __instance.versionNumberText != null)
             {
-                __instance.versionNumberText.text = string.Format("v{0} (MC)", GameNetworkAwakePatch.originalVersion);
+                __instance.versionNumberText.text = string.Format("{0} (MC)", __instance.versionNumberText.text);
+            }
+        }
+    }
+
+    [HarmonyPatch]
+    public static class OnLobbyCreatedPatch
+    {
+        [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
+        [HarmonyPrefix]
+        private static void SteamMatchmaking_OnLobbyCreated_Prefix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
+        {
+            if (result != Steamworks.Result.OK)
+                return;
+
+            lobby.SetData("maxplayers", lobby.MaxMembers.ToString());
+        }
+
+        [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
+        [HarmonyPostfix]
+        private static void SteamMatchmaking_OnLobbyCreated_Postfix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
+        {
+            if (result != Steamworks.Result.OK)
+                return;
+
+            if (lobby.GetData("tag") == "none" && !Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                lobby.SetData("tag", "morecompany");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(LobbyQuery))]
+    public static class LobbyQueryPatch
+    {
+        [HarmonyPatch("ApplyFilters")]
+        [HarmonyPrefix]
+        public static void ApplyFilters_Prefix(ref LobbyQuery __instance)
+        {
+            if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                bool shouldReplaceTag = false;
+                SteamLobbyManager steamLobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
+                if (steamLobbyManager != null)
+                {
+                    shouldReplaceTag = steamLobbyManager.serverTagInputField.text == string.Empty;
+                }
+                else if (__instance.stringFilters == null || !__instance.stringFilters.ContainsKey("tag") || __instance.stringFilters["tag"] == "none")
+                {
+                    shouldReplaceTag = true;
+                }
+                if (shouldReplaceTag)
+                {
+                    if (__instance.stringFilters != null && __instance.stringFilters.ContainsKey("tag"))
+                        __instance.stringFilters.Remove("tag");
+
+                    __instance.WithKeyValue("tag", "morecompany");
+                }
             }
         }
     }

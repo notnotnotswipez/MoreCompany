@@ -42,6 +42,11 @@
   <!-- Development dependencies (set 'PrivateAsssets="all"') -->
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.*" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Runtime dependencies (common) -->
@@ -58,7 +63,7 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="Facepunch.Steamworks.Win64">
+    <Reference Include="Facepunch.Steamworks.Win64" Publicize="true">
       <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch.Steamworks.Win64.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
@@ -80,7 +85,7 @@
 
   <!-- Runtime dependencies (CI) -->
   <ItemGroup Condition="$(CI) == 'true'">
-    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />
+    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" />
   </ItemGroup>
 
   <!-- prevent referenced assemblies from being copied to output folders -->

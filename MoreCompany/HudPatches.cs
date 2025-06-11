@@ -41,30 +41,31 @@ namespace MoreCompany
     {
         public static void UpdateTextBox(TMP_InputField inputField, string s)
         {
-            if (inputField.text == MainClass.newPlayerCount.ToString())
+            if (inputField.text == MainClass.actualPlayerCount.ToString())
                 return;
 
             if (int.TryParse(s, out int result))
             {
-                int originalCount = MainClass.newPlayerCount;
-                MainClass.newPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
-                inputField.text = MainClass.newPlayerCount.ToString();
-                if (MainClass.newPlayerCount != originalCount)
-                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.newPlayerCount}");
+                int originalCount = MainClass.actualPlayerCount;
+                MainClass.actualPlayerCount = Mathf.Clamp(result, MainClass.minPlayerCount, MainClass.maxPlayerCount);
+                MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
+                inputField.text = MainClass.actualPlayerCount.ToString();
+                if (MainClass.actualPlayerCount != originalCount)
+                    MainClass.StaticLogger.LogInfo($"Changed Crew Count: {MainClass.actualPlayerCount}");
 
-                MainClass.playerCount.Value = MainClass.newPlayerCount;
+                MainClass.playerCount.Value = MainClass.actualPlayerCount;
                 MainClass.StaticConfig.Save();
             }
             else if (s.Length != 0)
             {
-                inputField.text = MainClass.newPlayerCount.ToString();
+                inputField.text = MainClass.actualPlayerCount.ToString();
                 inputField.caretPosition = 1;
             }
         }
 
         public static void SetupCrewCountInput(TMP_InputField inputField)
         {
-            inputField.text = MainClass.newPlayerCount.ToString();
+            inputField.text = MainClass.actualPlayerCount.ToString();
 
             if (!inputField.transform.Find("Registered"))
             {
@@ -112,7 +113,8 @@ namespace MoreCompany
 
         public static void Postfix(MenuManager __instance)
         {
-            MainClass.newPlayerCount = Mathf.Max(MainClass.minPlayerCount, MainClass.playerCount.Value);
+            MainClass.actualPlayerCount = Mathf.Max(MainClass.minPlayerCount, MainClass.playerCount.Value);
+            MainClass.newPlayerCount = Mathf.Max(4, MainClass.actualPlayerCount);
             CreateCrewCountInput(__instance);
         }
     }
@@ -131,7 +133,6 @@ namespace MoreCompany
             try
             {
                 Sprite logoImage = Sprite.Create(MainClass.mainLogo, new Rect(0, 0, MainClass.mainLogo.width, MainClass.mainLogo.height), new Vector2(0.5f, 0.5f));
-
                 GameObject parent = __instance.transform.parent.gameObject;
 
                 Transform mainLogo = parent.transform.Find("MenuContainer/MainButtons/HeaderImage");

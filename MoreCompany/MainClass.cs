@@ -241,8 +241,6 @@ namespace MoreCompany
             StartOfRound round = StartOfRound.Instance;
             if (round.allPlayerObjects.Length != newPlayerCount)
             {
-                uint starting = 10000;
-
                 int originalLength = round.allPlayerObjects.Length;
 
                 int difference = newPlayerCount - originalLength;
@@ -257,27 +255,28 @@ namespace MoreCompany
                 if (difference > 0)
                 {
                     GameObject firstPlayerObject = round.allPlayerObjects[originalLength - 1];
+                    uint globalObjectIdHash = 10001;
                     for (int i = 0; i < difference; i++)
                     {
-                        uint newId = starting + (uint)i;
-                        GameObject copy = GameObject.Instantiate(firstPlayerObject, firstPlayerObject.transform.parent);
-                        NetworkObject copyNetworkObject = copy.GetComponent<NetworkObject>();
-                        ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", (uint) newId);
-                        int handle = copyNetworkObject.gameObject.scene.handle;
-                        uint globalObjectIdHash = newId;
-
-                        if (!ScenePlacedObjects.ContainsKey(globalObjectIdHash))
-                        {
-                            ScenePlacedObjects.Add(globalObjectIdHash, new Dictionary<int, NetworkObject>());
-                        }
-                        if (ScenePlacedObjects[globalObjectIdHash].ContainsKey(handle))
-                        {
-                            string text = ((ScenePlacedObjects[globalObjectIdHash][handle] != null) ? ScenePlacedObjects[globalObjectIdHash][handle].name : "Null Entry");
-                            throw new Exception(copyNetworkObject.name + " tried to registered with ScenePlacedObjects which already contains " + string.Format("the same {0} value {1} for {2}!", "GlobalObjectIdHash", globalObjectIdHash, text));
-                        }
-                        ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
-
+                        GameObject copy = Instantiate(firstPlayerObject, firstPlayerObject.transform.parent);
                         copy.name = $"Player ({originalLength + i})";
+
+                        foreach (NetworkObject copyNetworkObject in copy.GetComponentsInChildren<NetworkObject>())
+                        {
+                            ReflectionUtils.SetFieldValue(copyNetworkObject, "GlobalObjectIdHash", globalObjectIdHash);
+                            int handle = copyNetworkObject.gameObject.scene.handle;
+                            if (!ScenePlacedObjects.ContainsKey(globalObjectIdHash))
+                            {
+                                ScenePlacedObjects.Add(globalObjectIdHash, new Dictionary<int, NetworkObject>());
+                            }
+                            if (ScenePlacedObjects[globalObjectIdHash].ContainsKey(handle))
+                            {
+                                string text = ScenePlacedObjects[globalObjectIdHash][handle] != null ? ScenePlacedObjects[globalObjectIdHash][handle].name : "Null Entry";
+                                throw new Exception($"{copyNetworkObject.name} tried to registered with ScenePlacedObjects which already contains the same GlobalObjectIdHash value {globalObjectIdHash} for {text}!");
+                            }
+                            ScenePlacedObjects[globalObjectIdHash].Add(handle, copyNetworkObject);
+                            globalObjectIdHash++;
+                        }
 
                         PlayerControllerB newPlayerScript = copy.GetComponentInChildren<PlayerControllerB>();
 

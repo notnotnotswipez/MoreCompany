@@ -47,7 +47,7 @@
   <!-- Runtime dependencies (common) -->
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
-    <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" />
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" />
   </ItemGroup>
 
   <!-- Runtime dependencies (local) -->
@@ -80,7 +80,7 @@
 
   <!-- Runtime dependencies (CI) -->
   <ItemGroup Condition="$(CI) == 'true'">
-    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="49.0.0-alpha.1" />
+    <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" />
   </ItemGroup>
 
   <!-- prevent referenced assemblies from being copied to output folders -->

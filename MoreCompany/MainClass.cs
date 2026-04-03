@@ -625,6 +625,13 @@ namespace MoreCompany
             __instance.allPlayerScripts[playerObjectNumber].gameObject.SetActive(false);
         }
 
+        [HarmonyPatch(typeof(HUDManager), "UpdateWeightCounter")]
+        [HarmonyPrefix]
+        private static bool UpdateWeightCounter()
+        {
+            return GameNetworkManager.Instance.localPlayerController != null;
+        }
+
 
         // [Host] Notify the player that they were kicked
         [HarmonyPatch(typeof(StartOfRound), "KickPlayer")]

@@ -15,7 +15,7 @@ namespace MoreCompany
     {
         public static bool Prefix(string chatMessage, int playerId = -1)
         {
-            if (DebugCommandRegistry.commandEnabled && StartOfRound.Instance.IsHost && chatMessage.StartsWith("/mc"))
+            if (DebugCommandRegistry.commandEnabled && StartOfRound.Instance.IsHost && chatMessage != null && chatMessage.StartsWith("/mc"))
             {
                 String command = chatMessage.Replace("/mc ", "");
                 DebugCommandRegistry.HandleCommand(command.Split(' '));
@@ -196,7 +196,7 @@ namespace MoreCompany
         [HarmonyPrefix]
         public static bool AddChatMessage_Prefix(string chatMessage, string nameOfUserWhoTyped = "")
         {
-            if (chatMessage.StartsWith("[replacewithdata]") || chatMessage.StartsWith("[morecompanycosmetics]"))
+            if (chatMessage != null && (chatMessage.StartsWith("[replacewithdata]") || chatMessage.StartsWith("[morecompanycosmetics]")))
             {
                 return false;
             }

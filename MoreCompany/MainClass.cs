@@ -23,7 +23,7 @@ namespace MoreCompany
     public static class PluginInformation
     {
         public const string PLUGIN_NAME = "MoreCompany";
-        public const string PLUGIN_VERSION = "1.12.0";
+        public const string PLUGIN_VERSION = "1.13.2";
         public const string PLUGIN_GUID = "me.swipez.melonloader.morecompany";
     }
 
@@ -631,6 +631,13 @@ namespace MoreCompany
         private static void OnPlayerDC(StartOfRound __instance, int playerObjectNumber, ulong clientId)
         {
             __instance.allPlayerScripts[playerObjectNumber].gameObject.SetActive(false);
+        }
+
+        [HarmonyPatch(typeof(HUDManager), "UpdateWeightCounter")]
+        [HarmonyPrefix]
+        private static bool UpdateWeightCounter()
+        {
+            return GameNetworkManager.Instance.localPlayerController != null;
         }
 
 

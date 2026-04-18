@@ -417,6 +417,7 @@ namespace MoreCompany
     {
         public static void Postfix(SteamLobbyManager __instance)
         {
+            __instance.sortWithModdedClientsCheckbox.transform.parent.gameObject.SetActive(false);
             bool sortWithModdedClients = ReflectionUtils.GetFieldValue<bool>(__instance, "sortWithModdedClients");
             if (!sortWithModdedClients)
             {

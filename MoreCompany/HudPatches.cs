@@ -411,4 +411,18 @@ namespace MoreCompany
             uiElements.playerStates[index] = playerState.GetComponent<Image>();
         }
     }
+
+    [HarmonyPatch(typeof(SteamLobbyManager), "OnEnable")]
+    public static class SteamLobbyManagerPatch
+    {
+        public static void Postfix(SteamLobbyManager __instance)
+        {
+            __instance.sortWithModdedClientsCheckbox.transform.parent.gameObject.SetActive(false);
+            bool sortWithModdedClients = ReflectionUtils.GetFieldValue<bool>(__instance, "sortWithModdedClients");
+            if (!sortWithModdedClients)
+            {
+                __instance.ToggleSortWithModdedClients();
+            }
+        }
+    }
 }
